@@ -102,13 +102,28 @@ def get_perks_list_keyboard(perks: List[Dict], rarity: str, category: str, page:
     return builder.as_markup()
 
 def format_perk_effects(perk: Dict) -> str:
-    text = ""
+    good_effects = []
+    bad_effects = []
     
     for effect in perk.get("effects", []):
         effect_type = effect.get("type", "neutral")
         description = effect.get("description", "")
         emoji = EFFECT_EMOJI.get(effect_type, "⚪")
-        text += f"{emoji} {description}\n"
+        
+        if effect_type == "good":
+            good_effects.append(f"{emoji} {description}")
+        else:
+            bad_effects.append(f"{emoji} {description}")
+    
+    text = ""
+    
+    if good_effects:
+        text += "\n".join(good_effects)
+    
+    if bad_effects:
+        if good_effects:
+            text += "\n\n"
+        text += "\n".join(bad_effects)
     
     return text.strip()
 
