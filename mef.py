@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import aiofiles
 from aiogram import Bot, Dispatcher, F, types
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -20,7 +22,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 
-bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
@@ -28,7 +30,6 @@ CREATOR_ID = 7306010609
 
 CODES_PER_PAGE = 5
 
-# Константы для эмодзи
 EMOJI_MAP = {
     "good": "🟢",
     "bad": "🔴",
@@ -53,9 +54,7 @@ PERK_TYPES = {
 }
 
 
-# ===================== Функции для работы с БД =====================
 def init_db() -> None:
-    """Инициализация базы данных"""
     with sqlite3.connect("verified_mega_aotr.db") as conn:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
@@ -84,7 +83,6 @@ def init_db() -> None:
 
 
 def save_user_session(user_id: int, session_type: str, message_id: int) -> None:
-    """Сохранение сессии пользователя"""
     with sqlite3.connect("verified_mega_aotr.db") as conn:
         conn.execute(
             """
@@ -97,7 +95,6 @@ def save_user_session(user_id: int, session_type: str, message_id: int) -> None:
 
 
 def get_user_session(user_id: int, session_type: str) -> Optional[int]:
-    """Получение сессии пользователя"""
     with sqlite3.connect("verified_mega_aotr.db") as conn:
         result = conn.execute(
             """
@@ -110,14 +107,12 @@ def get_user_session(user_id: int, session_type: str) -> Optional[int]:
 
 
 def check_session_access(user_id: int, message_id: int, session_type: str) -> bool:
-    """Проверка доступа к сессии"""
     saved_message_id = get_user_session(user_id, session_type)
     return saved_message_id == message_id
 
 
 def check_chat_verification(chat_id: int) -> bool:
-    """Проверка верификации чата"""
-    if chat_id > 0:  # Личные сообщения всегда верифицированы
+    if chat_id > 0:
         return True
 
     with sqlite3.connect("verified_mega_aotr.db") as conn:
@@ -127,9 +122,7 @@ def check_chat_verification(chat_id: int) -> bool:
         return result is not None and result[0] == 1
 
 
-# ===================== Функции загрузки данных =====================
 async def load_perks() -> Dict[str, Any]:
-    """Загрузка перков"""
     try:
         async with aiofiles.open("perks.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
@@ -138,7 +131,6 @@ async def load_perks() -> Dict[str, Any]:
 
 
 async def load_memories() -> Dict[str, Any]:
-    """Загрузка воспоминаний"""
     try:
         async with aiofiles.open("memories.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
@@ -147,7 +139,6 @@ async def load_memories() -> Dict[str, Any]:
 
 
 async def load_families() -> Dict[str, Any]:
-    """Загрузка фамилий"""
     try:
         async with aiofiles.open("families.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
@@ -156,7 +147,6 @@ async def load_families() -> Dict[str, Any]:
 
 
 async def load_config() -> Dict[str, Any]:
-    """Загрузка конфигурации"""
     try:
         async with aiofiles.open("config.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
@@ -165,7 +155,6 @@ async def load_config() -> Dict[str, Any]:
 
 
 async def load_codes() -> List[Dict[str, Any]]:
-    """Загрузка кодов"""
     try:
         async with aiofiles.open("codes.json", "r", encoding="utf-8") as f:
             data = json.loads(await f.read())
@@ -176,9 +165,7 @@ async def load_codes() -> List[Dict[str, Any]]:
         return []
 
 
-# ===================== Вспомогательные функции =====================
 def format_codes_page(codes: List[Dict[str, Any]], page: int) -> str:
-    """Форматирование страницы с кодами"""
     start = page * CODES_PER_PAGE
     end = start + CODES_PER_PAGE
     page_codes = codes[start:end]
@@ -194,7 +181,6 @@ def format_codes_page(codes: List[Dict[str, Any]], page: int) -> str:
 
 
 def get_codes_keyboard(page: int, max_page: int, user_id: int) -> InlineKeyboardMarkup:
-    """Клавиатура для кодов"""
     builder = InlineKeyboardBuilder()
 
     if page > 0:
@@ -213,7 +199,6 @@ def get_codes_keyboard(page: int, max_page: int, user_id: int) -> InlineKeyboard
 
 
 async def find_family(family_name: str) -> Tuple[Optional[Dict], Optional[str]]:
-    """Поиск фамилии по имени"""
     families_data = await load_families()
     for rarity, families in families_data["families"].items():
         for family in families:
@@ -223,22 +208,17 @@ async def find_family(family_name: str) -> Tuple[Optional[Dict], Optional[str]]:
 
 
 def get_rarity_emoji(rarity: str) -> str:
-    """Получить эмодзи для редкости"""
     if rarity == "Секретная":
         return "⚫"
     return RARITY_COLORS.get(rarity, "⚪")
 
 
-# ===================== Клавиатуры для гайдов =====================
 def get_main_menu_families() -> InlineKeyboardMarkup:
-    """Главное меню фамилий"""
     builder = InlineKeyboardBuilder()
-    # Заглушка, реальные данные будут загружаться в обработчике
     return builder.as_markup()
 
 
 async def get_families_keyboard() -> InlineKeyboardMarkup:
-    """Асинхронное получение клавиатуры фамилий"""
     families_data = await load_families()
     builder = InlineKeyboardBuilder()
 
@@ -254,7 +234,6 @@ async def get_families_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_main_menu_guide() -> InlineKeyboardMarkup:
-    """Главное меню гайдов"""
     builder = InlineKeyboardBuilder()
     builder.button(text="💰 Фарм", callback_data="menu_farm")
     builder.button(text="⭐ Престиж", callback_data="prestige")
@@ -264,7 +243,6 @@ def get_main_menu_guide() -> InlineKeyboardMarkup:
 
 
 def get_farm_menu() -> InlineKeyboardMarkup:
-    """Меню фарма"""
     builder = InlineKeyboardBuilder()
     builder.button(text="🪙 Золото", callback_data="farm_gold")
     builder.button(text="👹 Титаны", callback_data="farm_titans")
@@ -275,7 +253,6 @@ def get_farm_menu() -> InlineKeyboardMarkup:
 
 
 def get_builds_menu() -> InlineKeyboardMarkup:
-    """Меню билдов"""
     builder = InlineKeyboardBuilder()
     builder.button(text="👑 Fritz", callback_data="build_fritz")
     builder.button(text="⚡ Helos", callback_data="build_helos")
@@ -287,7 +264,6 @@ def get_builds_menu() -> InlineKeyboardMarkup:
 
 
 def get_fritz_menu() -> InlineKeyboardMarkup:
-    """Меню билдов Fritz"""
     builder = InlineKeyboardBuilder()
     builder.button(text="🛡️ ОДМ", callback_data="fritz_odm")
     builder.button(text="👊 Атак титан", callback_data="fritz_attack")
@@ -298,7 +274,6 @@ def get_fritz_menu() -> InlineKeyboardMarkup:
 
 
 def get_helos_menu() -> InlineKeyboardMarkup:
-    """Меню билдов Helos"""
     builder = InlineKeyboardBuilder()
     builder.button(text="🛡️ ОДМ", callback_data="helos_odm")
     builder.button(text="⚡ Громовые Копья", callback_data="helos_spears")
@@ -309,7 +284,6 @@ def get_helos_menu() -> InlineKeyboardMarkup:
 
 
 def get_ackerman_menu() -> InlineKeyboardMarkup:
-    """Меню билдов Ackerman"""
     builder = InlineKeyboardBuilder()
     builder.button(text="🛡️ ОДМ", callback_data="ackerman_odm")
     builder.button(text="⚡ Громовые Копья", callback_data="ackerman_spears")
@@ -319,7 +293,6 @@ def get_ackerman_menu() -> InlineKeyboardMarkup:
 
 
 def get_leonhart_menu() -> InlineKeyboardMarkup:
-    """Меню билдов Leonhart"""
     builder = InlineKeyboardBuilder()
     builder.button(text="💃 Фемка", callback_data="leonhart_female")
     builder.button(text="◀️ Назад", callback_data="menu_builds")
@@ -328,7 +301,6 @@ def get_leonhart_menu() -> InlineKeyboardMarkup:
 
 
 def get_main_menu_memories() -> InlineKeyboardMarkup:
-    """Главное меню воспоминаний"""
     builder = InlineKeyboardBuilder()
     builder.button(text="⭐", callback_data="mem_1")
     builder.button(text="⭐⭐", callback_data="mem_2")
@@ -341,7 +313,6 @@ def get_main_menu_memories() -> InlineKeyboardMarkup:
 def get_memories_keyboard(
     memories_dict: Dict, page: int = 0, rarity: str = ""
 ) -> InlineKeyboardMarkup:
-    """Клавиатура для списка воспоминаний"""
     memories_list = list(memories_dict.items())
     start_idx = page * 5
     end_idx = start_idx + 5
@@ -375,22 +346,18 @@ def get_memories_keyboard(
     return builder.as_markup()
 
 
-# ===================== Middleware =====================
 @dp.callback_query.middleware()
 async def check_verification_middleware(
     handler, event: CallbackQuery, data: dict
 ):
-    """Middleware для проверки верификации чата"""
     if not check_chat_verification(event.message.chat.id):
         await event.answer("Чат не верифицирован", show_alert=True)
         return
     return await handler(event, data)
 
 
-# ===================== Обработчики команд =====================
 @dp.message(Command("AotrOn"))
 async def cmd_verification_on(message: Message):
-    """Включение верификации чата"""
     if message.from_user.id != CREATOR_ID:
         await message.answer("Нет прав.")
         return
@@ -407,7 +374,6 @@ async def cmd_verification_on(message: Message):
 
 @dp.message(Command("AotrOff"))
 async def cmd_verification_off(message: Message):
-    """Выключение верификации чата"""
     if message.from_user.id != CREATOR_ID:
         await message.answer("Нет прав.")
         return
@@ -424,13 +390,11 @@ async def cmd_verification_off(message: Message):
 
 @dp.message(Command("start_aotrcode"))
 async def start_handler(message: Message):
-    """Стартовая команда"""
     await message.answer("Бот активен все збс.")
 
 
 @dp.message(Command("code"))
 async def code_command(message: Message):
-    """Команда для просмотра кодов"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
@@ -447,7 +411,6 @@ async def code_command(message: Message):
 
 @dp.callback_query(F.data.startswith("page:"))
 async def process_callback_page(callback: CallbackQuery):
-    """Обработка пагинации кодов"""
     await callback.answer()
 
     _, user_id_str, page_str = callback.data.split(":")
@@ -471,7 +434,6 @@ async def process_callback_page(callback: CallbackQuery):
 
 @dp.message(Command("families"))
 async def cmd_families(message: Message):
-    """Команда для просмотра фамилий"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
@@ -496,7 +458,6 @@ async def cmd_families(message: Message):
 
 @dp.message(Command("search"))
 async def cmd_search(message: Message):
-    """Поиск фамилии"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
@@ -529,7 +490,6 @@ async def cmd_search(message: Message):
 
 @dp.callback_query(F.data.startswith("family_rarity:"))
 async def show_families(callback: CallbackQuery):
-    """Показать фамилии по редкости"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -565,7 +525,6 @@ async def show_families(callback: CallbackQuery):
 
 @dp.callback_query(F.data.startswith("family:"))
 async def show_family_info(callback: CallbackQuery):
-    """Показать информацию о фамилии"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -612,7 +571,6 @@ async def show_family_info(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "back_to_main_families")
 async def back_to_main_families(callback: CallbackQuery):
-    """Возврат в главное меню фамилий"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -631,7 +589,6 @@ async def back_to_main_families(callback: CallbackQuery):
 
 @dp.message(Command("guide"))
 async def cmd_guide(message: Message):
-    """Команда для гайдов"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
@@ -646,10 +603,8 @@ async def cmd_guide(message: Message):
     await message.delete()
 
 
-# ===================== Обработчики для гайдов =====================
 @dp.callback_query(F.data == "menu_farm")
 async def menu_farm(callback: CallbackQuery):
-    """Меню фарма"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -668,7 +623,6 @@ async def menu_farm(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "menu_builds")
 async def menu_builds(callback: CallbackQuery):
-    """Меню билдов"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -687,7 +641,6 @@ async def menu_builds(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "prestige")
 async def menu_prestige(callback: CallbackQuery):
-    """Информация о престиже"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -713,7 +666,6 @@ async def menu_prestige(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "farm_gold")
 async def farm_gold(callback: CallbackQuery):
-    """Фарм золота"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -739,7 +691,6 @@ async def farm_gold(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "farm_titans")
 async def farm_titans(callback: CallbackQuery):
-    """Фарм титанов"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -765,7 +716,6 @@ async def farm_titans(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "farm_raids")
 async def farm_raids(callback: CallbackQuery):
-    """Фарм рейдов"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -791,7 +741,6 @@ async def farm_raids(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "build_fritz")
 async def build_fritz(callback: CallbackQuery):
-    """Билды Fritz"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -810,7 +759,6 @@ async def build_fritz(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "build_helos")
 async def build_helos(callback: CallbackQuery):
-    """Билды Helos"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -829,7 +777,6 @@ async def build_helos(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "build_ackerman")
 async def build_ackerman(callback: CallbackQuery):
-    """Билды Ackerman"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -848,7 +795,6 @@ async def build_ackerman(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "build_leonhart")
 async def build_leonhart(callback: CallbackQuery):
-    """Билды Leonhart"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -867,7 +813,6 @@ async def build_leonhart(callback: CallbackQuery):
 
 @dp.callback_query(F.data.startswith(("fritz_", "helos_", "ackerman_", "leonhart_")))
 async def handle_builds(callback: CallbackQuery):
-    """Обработка конкретных билдов"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -901,7 +846,6 @@ async def handle_builds(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "back_main")
 async def back_main(callback: CallbackQuery):
-    """Возврат в главное меню гайдов"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -918,10 +862,8 @@ async def back_main(callback: CallbackQuery):
         pass
 
 
-# ===================== Обработчики для воспоминаний =====================
 @dp.message(Command("memories"))
 async def cmd_memories(message: Message):
-    """Команда для просмотра воспоминаний"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
@@ -938,7 +880,6 @@ async def cmd_memories(message: Message):
 
 @dp.callback_query(F.data.in_(["mem_1", "mem_2", "mem_3", "mem_4"]))
 async def show_memories(callback: CallbackQuery):
-    """Показать воспоминания по редкости"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -965,7 +906,6 @@ async def show_memories(callback: CallbackQuery):
 
 @dp.callback_query(F.data.startswith("mempage:"))
 async def change_memory_page(callback: CallbackQuery):
-    """Смена страницы воспоминаний"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -994,7 +934,6 @@ async def change_memory_page(callback: CallbackQuery):
 
 @dp.callback_query(F.data.startswith("memory:"))
 async def show_memory_info(callback: CallbackQuery):
-    """Показать информацию о воспоминании"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -1025,7 +964,6 @@ async def show_memory_info(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "mem_home")
 async def back_to_memories_main(callback: CallbackQuery):
-    """Возврат в главное меню воспоминаний"""
     await callback.answer()
 
     user_id = callback.from_user.id
@@ -1042,9 +980,7 @@ async def back_to_memories_main(callback: CallbackQuery):
         pass
 
 
-# ===================== Запуск бота =====================
 async def main():
-    """Главная функция"""
     init_db()
     print("Бот запущен...")
     await dp.start_polling(bot)
