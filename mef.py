@@ -26,6 +26,11 @@ from perks import (
     RARITY_EMOJI, CATEGORY_NAMES, CATEGORY_EMOJI
 )
 
+from admin import (
+    get_admin_menu, MailingStates, send_mailing,
+    get_all_chats, get_all_users
+)
+
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -1189,6 +1194,61 @@ async def back_to_main_perks(callback: CallbackQuery):
         )
     except:
         pass
+
+
+@dp.message(Command("admin"))
+async def cmd_admin(message: Message, state: FSMContext):
+    if message.from_user.id != CREATOR_ID:
+        await message.answer("Нет прав для админ-панели.")
+        return
+    
+    await state.clear()
+    
+    await message.answer(
+        "🔧 Админ-панель:\nВыбери действие:",
+        reply_markup=get_admin_menu()
+    )
+
+
+@dp.callback_query(F.data == "admin_mailing")
+async def admin_mailing(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    await state.set_state(MailingStates.waiting_for_text)
+    
+    await callback.message.edit_text(
+        "📨 Введи текст для рассылки:\n"
+        "(отправь сообщение с текстом)"
+    )
+
+
+@dp.message(MailingStates.waiting_for_text)
+async def process_mailing_text(message: Message, state: FSMContext, bot: Bot):
+    if message.from_user.id != CREATOR_ID:
+        await message.answer("Нет прав.")
+        await state.clear()
+        return
+    
+    if not message.text:
+        await message.answer("Отправь текстовое сообщение.")
+        return
+    
+    text = message.text
+    
+    status_msg = await message.answer("⏳ Начинаю рассылку...")
+    
+    sent, failed = await send_mailing(bot, text)
+    
+    await status_msg.edit_text(
+        f"✅ Рассылка завершена!\n"
+        f"📨 Отправлено: {sent}\n"
+        f"❌ Не удалось: {failed}"
+    )
+    
+    await state.clear()
 
 
 async def main():
