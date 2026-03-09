@@ -31,7 +31,7 @@ EFFECT_EMOJI = {
     "bad": "🔴"
 }
 
-async def load_perks() -> Dict[str, Any]:
+async def load_perks_data() -> Dict[str, Any]:
     try:
         async with aiofiles.open("perks.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
@@ -71,10 +71,11 @@ def get_perks_list_keyboard(perks: List[Dict], rarity: str, category: str, page:
     start = page * perks_per_page
     end = start + perks_per_page
     page_perks = perks[start:end]
+    rarity_emoji = RARITY_EMOJI.get(rarity, "⚪")
     
     for perk in page_perks:
         builder.button(
-            text=perk["name"],
+            text=f"{rarity_emoji}{perk['name']}{rarity_emoji}",
             callback_data=f"perk_info:{rarity}:{category}:{perk['name']}"
         )
     
@@ -101,7 +102,7 @@ def get_perks_list_keyboard(perks: List[Dict], rarity: str, category: str, page:
     return builder.as_markup()
 
 def format_perk_effects(perk: Dict) -> str:
-    text = f"<b>{perk['name']}</b>\n\n"
+    text = ""
     
     for effect in perk.get("effects", []):
         effect_type = effect.get("type", "neutral")
@@ -112,7 +113,7 @@ def format_perk_effects(perk: Dict) -> str:
     return text.strip()
 
 async def find_perk(perk_name: str) -> Tuple[Optional[Dict], Optional[str], Optional[str]]:
-    perks_data = await load_perks()
+    perks_data = await load_perks_data()
     perks = perks_data.get("perks", {})
     
     for rarity, categories in perks.items():

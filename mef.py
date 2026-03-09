@@ -21,7 +21,7 @@ from aiogram.utils.chat_action import ChatActionMiddleware
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from perks import (
-    load_perks, get_main_menu_perks, get_categories_keyboard,
+    load_perks_data, get_main_menu_perks, get_categories_keyboard,
     get_perks_list_keyboard, format_perk_effects, find_perk,
     RARITY_EMOJI, CATEGORY_NAMES, CATEGORY_EMOJI
 )
@@ -126,14 +126,6 @@ def check_chat_verification(chat_id: int) -> bool:
             "SELECT verified FROM verified_chats WHERE chat_id = ?", (chat_id,)
         ).fetchone()
         return result is not None and result[0] == 1
-
-
-async def load_perks() -> Dict[str, Any]:
-    try:
-        async with aiofiles.open("perks.json", "r", encoding="utf-8") as f:
-            return json.loads(await f.read())
-    except:
-        return {"perks": {}}
 
 
 async def load_memories() -> Dict[str, Any]:
@@ -995,7 +987,7 @@ async def cmd_perks(message: Message):
     user_id = message.from_user.id
     
     msg = await message.answer(
-        "Перки:\nВыбери редкость:",
+        "⚡ Перки:\nВыбери редкость:",
         reply_markup=get_main_menu_perks()
     )
     
@@ -1067,9 +1059,21 @@ async def process_perk_category(callback: CallbackQuery):
         await callback.answer("Не твои кнопки, используй /perks", show_alert=True)
         return
     
-    _, rarity, category_key = callback.data.split(":")
+    parts = callback.data.split(":")
+    if len(parts) == 2:
+        rarity = parts[1]
+        try:
+            await callback.message.edit_text(
+                f"{RARITY_EMOJI.get(rarity, '⚪')} {rarity}:\nВыбери категорию:",
+                reply_markup=get_categories_keyboard(rarity)
+            )
+        except:
+            pass
+        return
     
-    perks_data = await load_perks()
+    _, rarity, category_key = parts
+    
+    perks_data = await load_perks_data()
     perks = perks_data.get("perks", {}).get(rarity, {}).get(category_key, [])
     
     if not perks:
@@ -1101,7 +1105,7 @@ async def process_perk_info(callback: CallbackQuery):
     
     _, rarity, category_key, perk_name = callback.data.split(":", 3)
     
-    perks_data = await load_perks()
+    perks_data = await load_perks_data()
     perks = perks_data.get("perks", {}).get(rarity, {}).get(category_key, [])
     
     perk_data = None
@@ -1148,7 +1152,7 @@ async def process_perk_page(callback: CallbackQuery):
     _, rarity, category_key, page_str = callback.data.split(":")
     page = int(page_str)
     
-    perks_data = await load_perks()
+    perks_data = await load_perks_data()
     perks = perks_data.get("perks", {}).get(rarity, {}).get(category_key, [])
     
     if not perks:
@@ -1180,7 +1184,7 @@ async def back_to_main_perks(callback: CallbackQuery):
     
     try:
         await callback.message.edit_text(
-            "Перки:\nВыбери редкость:",
+            "⚡ Перки:\nВыбери редкость:",
             reply_markup=get_main_menu_perks()
         )
     except:
