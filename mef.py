@@ -20,6 +20,12 @@ from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 from aiogram.utils.chat_action import ChatActionMiddleware
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from perks import (
+    load_perks, get_main_menu_perks, get_categories_keyboard,
+    get_perks_list_keyboard, format_perk_effects, find_perk,
+    RARITY_EMOJI, CATEGORY_NAMES, CATEGORY_EMOJI
+)
+
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -975,6 +981,207 @@ async def back_to_memories_main(callback: CallbackQuery):
     try:
         await callback.message.edit_text(
             "Мемори:", reply_markup=get_main_menu_memories()
+        )
+    except:
+        pass
+
+
+@dp.message(Command("perks"))
+async def cmd_perks(message: Message):
+    if not check_chat_verification(message.chat.id):
+        await message.answer("Бот не верифицирован в этом чате.")
+        return
+
+    user_id = message.from_user.id
+    
+    msg = await message.answer(
+        "Перки:\nВыбери редкость:",
+        reply_markup=get_main_menu_perks()
+    )
+    
+    save_user_session(user_id, "perks", msg.message_id)
+    await message.delete()
+
+
+@dp.message(Command("searchp"))
+async def cmd_search_perk(message: Message):
+    if not check_chat_verification(message.chat.id):
+        await message.answer("Бот не верифицирован в этом чате.")
+        return
+
+    if len(message.text.split()) < 2:
+        await message.answer("Правильный формат: /searchp [название перка]")
+        return
+
+    perk_name = " ".join(message.text.split()[1:])
+    perk_data, rarity, category_key = await find_perk(perk_name)
+
+    if not perk_data:
+        await message.answer(f"Перк '{perk_name}' не найден")
+        return
+
+    emoji = RARITY_EMOJI.get(rarity, "⚪")
+    category_name = CATEGORY_NAMES.get(category_key, "")
+    category_emoji = CATEGORY_EMOJI.get(category_key, "•")
+    
+    text = f"{emoji} <b>{perk_name}</b>\n"
+    text += f"📊 Редкость: {rarity}\n"
+    text += f"{category_emoji} Категория: {category_name}\n\n"
+    text += format_perk_effects(perk_data)
+
+    await message.answer(text)
+    await message.delete()
+
+
+@dp.callback_query(F.data.startswith("perk_rarity:"))
+async def process_perk_rarity(callback: CallbackQuery):
+    await callback.answer()
+    
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+    
+    if not check_session_access(user_id, message_id, "perks"):
+        await callback.answer("Не твои кнопки, используй /perks", show_alert=True)
+        return
+    
+    rarity = callback.data.split(":", 1)[1]
+    emoji = RARITY_EMOJI.get(rarity, "⚪")
+    
+    try:
+        await callback.message.edit_text(
+            f"{emoji} {rarity}:\nВыбери категорию:",
+            reply_markup=get_categories_keyboard(rarity)
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data.startswith("perk_category:"))
+async def process_perk_category(callback: CallbackQuery):
+    await callback.answer()
+    
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+    
+    if not check_session_access(user_id, message_id, "perks"):
+        await callback.answer("Не твои кнопки, используй /perks", show_alert=True)
+        return
+    
+    _, rarity, category_key = callback.data.split(":")
+    
+    perks_data = await load_perks()
+    perks = perks_data.get("perks", {}).get(rarity, {}).get(category_key, [])
+    
+    if not perks:
+        return
+    
+    category_name = CATEGORY_NAMES.get(category_key, "")
+    category_emoji = CATEGORY_EMOJI.get(category_key, "•")
+    rarity_emoji = RARITY_EMOJI.get(rarity, "⚪")
+    
+    try:
+        await callback.message.edit_text(
+            f"{rarity_emoji} {rarity} • {category_emoji} {category_name}\nВыбери перк:",
+            reply_markup=get_perks_list_keyboard(perks, rarity, category_key)
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data.startswith("perk_info:"))
+async def process_perk_info(callback: CallbackQuery):
+    await callback.answer()
+    
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+    
+    if not check_session_access(user_id, message_id, "perks"):
+        await callback.answer("Не твои кнопки, используй /perks", show_alert=True)
+        return
+    
+    _, rarity, category_key, perk_name = callback.data.split(":", 3)
+    
+    perks_data = await load_perks()
+    perks = perks_data.get("perks", {}).get(rarity, {}).get(category_key, [])
+    
+    perk_data = None
+    for perk in perks:
+        if perk["name"] == perk_name:
+            perk_data = perk
+            break
+    
+    if not perk_data:
+        return
+    
+    rarity_emoji = RARITY_EMOJI.get(rarity, "⚪")
+    category_name = CATEGORY_NAMES.get(category_key, "")
+    category_emoji = CATEGORY_EMOJI.get(category_key, "•")
+    
+    text = f"{rarity_emoji} <b>{perk_name}</b>\n"
+    text += f"📊 Редкость: {rarity}\n"
+    text += f"{category_emoji} Категория: {category_name}\n\n"
+    text += format_perk_effects(perk_data)
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="◀️ Назад",
+        callback_data=f"perk_category:{rarity}"
+    )
+    
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
+        pass
+
+
+@dp.callback_query(F.data.startswith("perk_page:"))
+async def process_perk_page(callback: CallbackQuery):
+    await callback.answer()
+    
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+    
+    if not check_session_access(user_id, message_id, "perks"):
+        await callback.answer("Не твои кнопки, используй /perks", show_alert=True)
+        return
+    
+    _, rarity, category_key, page_str = callback.data.split(":")
+    page = int(page_str)
+    
+    perks_data = await load_perks()
+    perks = perks_data.get("perks", {}).get(rarity, {}).get(category_key, [])
+    
+    if not perks:
+        return
+    
+    category_name = CATEGORY_NAMES.get(category_key, "")
+    category_emoji = CATEGORY_EMOJI.get(category_key, "•")
+    rarity_emoji = RARITY_EMOJI.get(rarity, "⚪")
+    
+    try:
+        await callback.message.edit_text(
+            f"{rarity_emoji} {rarity} • {category_emoji} {category_name}\nВыбери перк:",
+            reply_markup=get_perks_list_keyboard(perks, rarity, category_key, page)
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "back_to_main_perks")
+async def back_to_main_perks(callback: CallbackQuery):
+    await callback.answer()
+    
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+    
+    if not check_session_access(user_id, message_id, "perks"):
+        await callback.answer("Не твои кнопки, используй /perks", show_alert=True)
+        return
+    
+    try:
+        await callback.message.edit_text(
+            "Перки:\nВыбери редкость:",
+            reply_markup=get_main_menu_perks()
         )
     except:
         pass
