@@ -1,61 +1,171 @@
 import asyncio
 import json
 import sqlite3
+from typing import Any, Dict, List, Optional, Tuple
+
 import aiofiles
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
-from aiogram.utils.callback_data import CallbackData
-from aiogram.utils.exceptions import MessageNotModified
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Command, Text
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
+from aiogram.utils.callback_answer import CallbackAnswerMiddleware
+from aiogram.utils.chat_action import ChatActionMiddleware
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
-dp = Dispatcher(bot)
-dp.middleware.setup(LoggingMiddleware())
+storage = MemoryStorage()
+dp = Dispatcher(storage=storage)
 
 CREATOR_ID = 7306010609
 
 CODES_PER_PAGE = 5
 
-# Callback data factories
-page_cb = CallbackData("page", "user_id", "page_num")
-family_rarity_cb = CallbackData("family_rarity", "rarity_name")
-family_cb = CallbackData("family", "rarity", "family_name")
-mempage_cb = CallbackData("mempage", "rarity", "page")
-memory_cb = CallbackData("memory", "rarity", "memory_name")
+# Константы для эмодзи
+EMOJI_MAP = {
+    "good": "🟢",
+    "bad": "🔴",
+    "skill": "🔵",
+    "cooldown": "⚪",
+    "neutral": "⚫",
+}
 
-async def load_perks():
+RARITY_COLORS = {
+    "Обычная": "⚪",
+    "Редкая": "🔵",
+    "Эпическая": "🟣",
+    "Легендарная": "🟡",
+    "Мифическая": "🔴",
+}
+
+PERK_TYPES = {
+    "Основной": "main",
+    "Атакующий": "attack",
+    "Дефенс": "defense",
+    "Саппорт": "support",
+}
+
+
+# ===================== Функции для работы с БД =====================
+def init_db() -> None:
+    """Инициализация базы данных"""
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA cache_size=10000")
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS verified_chats (
+                chat_id INTEGER PRIMARY KEY,
+                verified BOOLEAN NOT NULL DEFAULT 0
+            )
+        """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                user_id INTEGER,
+                session_type TEXT,
+                message_id INTEGER,
+                PRIMARY KEY (user_id, session_type)
+            )
+        """
+        )
+        conn.commit()
+
+
+def save_user_session(user_id: int, session_type: str, message_id: int) -> None:
+    """Сохранение сессии пользователя"""
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO user_sessions (user_id, session_type, message_id)
+            VALUES (?, ?, ?)
+        """,
+            (user_id, session_type, message_id),
+        )
+        conn.commit()
+
+
+def get_user_session(user_id: int, session_type: str) -> Optional[int]:
+    """Получение сессии пользователя"""
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        result = conn.execute(
+            """
+            SELECT message_id FROM user_sessions 
+            WHERE user_id = ? AND session_type = ?
+        """,
+            (user_id, session_type),
+        ).fetchone()
+        return result[0] if result else None
+
+
+def check_session_access(user_id: int, message_id: int, session_type: str) -> bool:
+    """Проверка доступа к сессии"""
+    saved_message_id = get_user_session(user_id, session_type)
+    return saved_message_id == message_id
+
+
+def check_chat_verification(chat_id: int) -> bool:
+    """Проверка верификации чата"""
+    if chat_id > 0:  # Личные сообщения всегда верифицированы
+        return True
+
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        result = conn.execute(
+            "SELECT verified FROM verified_chats WHERE chat_id = ?", (chat_id,)
+        ).fetchone()
+        return result is not None and result[0] == 1
+
+
+# ===================== Функции загрузки данных =====================
+async def load_perks() -> Dict[str, Any]:
+    """Загрузка перков"""
     try:
-        async with aiofiles.open('perks.json', 'r', encoding='utf-8') as f:
+        async with aiofiles.open("perks.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
     except:
         return {"perks": {}}
 
-async def load_memories():
+
+async def load_memories() -> Dict[str, Any]:
+    """Загрузка воспоминаний"""
     try:
-        async with aiofiles.open('memories.json', 'r', encoding='utf-8') as f:
+        async with aiofiles.open("memories.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
     except:
         return {}
 
-async def load_families():
+
+async def load_families() -> Dict[str, Any]:
+    """Загрузка фамилий"""
     try:
-        async with aiofiles.open('families.json', 'r', encoding='utf-8') as f:
+        async with aiofiles.open("families.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
     except:
         return {"families": {}}
 
-async def load_config():
+
+async def load_config() -> Dict[str, Any]:
+    """Загрузка конфигурации"""
     try:
-        async with aiofiles.open('config.json', 'r', encoding='utf-8') as f:
+        async with aiofiles.open("config.json", "r", encoding="utf-8") as f:
             return json.loads(await f.read())
     except:
         return {}
 
-async def load_codes():
+
+async def load_codes() -> List[Dict[str, Any]]:
+    """Загрузка кодов"""
     try:
         async with aiofiles.open("codes.json", "r", encoding="utf-8") as f:
             data = json.loads(await f.read())
@@ -65,67 +175,10 @@ async def load_codes():
     except:
         return []
 
-def init_db():
-    conn = sqlite3.connect('verified_mega_aotr.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS verified_chats (
-            chat_id INTEGER PRIMARY KEY,
-            verified BOOLEAN NOT NULL DEFAULT 0
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS user_sessions (
-            user_id INTEGER,
-            session_type TEXT,
-            message_id INTEGER,
-            PRIMARY KEY (user_id, session_type)
-        )
-    ''')
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA synchronous=NORMAL")
-    cursor.execute("PRAGMA cache_size=10000")
-    conn.commit()
-    conn.close()
 
-def save_user_session(user_id, session_type, message_id):
-    conn = sqlite3.connect('verified_mega_aotr.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT OR REPLACE INTO user_sessions (user_id, session_type, message_id)
-        VALUES (?, ?, ?)
-    ''', (user_id, session_type, message_id))
-    conn.commit()
-    conn.close()
-
-def get_user_session(user_id, session_type):
-    conn = sqlite3.connect('verified_mega_aotr.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT message_id FROM user_sessions 
-        WHERE user_id = ? AND session_type = ?
-    ''', (user_id, session_type))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else None
-
-def check_session_access(user_id, message_id, session_type):
-    saved_message_id = get_user_session(user_id, session_type)
-    return saved_message_id == message_id
-
-def check_chat_verification(chat_id):
-    if chat_id > 0:
-        return True
-    
-    conn = sqlite3.connect('verified_mega_aotr.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT verified FROM verified_chats WHERE chat_id = ?', (chat_id,))
-    result = cursor.fetchone()
-    conn.close()
-    
-    return result is not None and result[0] == 1
-
-def format_codes_page(codes, page):
+# ===================== Вспомогательные функции =====================
+def format_codes_page(codes: List[Dict[str, Any]], page: int) -> str:
+    """Форматирование страницы с кодами"""
     start = page * CODES_PER_PAGE
     end = start + CODES_PER_PAGE
     page_codes = codes[start:end]
@@ -139,169 +192,28 @@ def format_codes_page(codes, page):
         text += f"{status} <code>{code}</code> — {reward}\n"
     return text
 
-def get_keyboard(page, max_page, user_id):
-    buttons = []
+
+def get_codes_keyboard(page: int, max_page: int, user_id: int) -> InlineKeyboardMarkup:
+    """Клавиатура для кодов"""
+    builder = InlineKeyboardBuilder()
+
     if page > 0:
-        buttons.append(types.InlineKeyboardButton(text="⬅️ Назад", callback_data=page_cb.new(user_id=user_id, page_num=page-1)))
+        builder.button(
+            text="⬅️ Назад",
+            callback_data=f"page:{user_id}:{page - 1}",
+        )
     if page < max_page:
-        buttons.append(types.InlineKeyboardButton(text="Вперёд ➡️", callback_data=page_cb.new(user_id=user_id, page_num=page+1)))
-    
-    keyboard = types.InlineKeyboardMarkup(row_width=2)
-    keyboard.add(*buttons)
-    return keyboard
+        builder.button(
+            text="Вперёд ➡️",
+            callback_data=f"page:{user_id}:{page + 1}",
+        )
 
-EMOJI_MAP = {
-    "good": "🟢",
-    "bad": "🔴", 
-    "skill": "🔵",
-    "cooldown": "⚪",
-    "neutral": "⚫"
-}
+    builder.adjust(2)
+    return builder.as_markup()
 
-RARITY_COLORS = {
-    "Обычная": "⚪",
-    "Редкая": "🔵", 
-    "Эпическая": "🟣",
-    "Легендарная": "🟡",
-    "Мифическая": "🔴"
-}
 
-PERK_TYPES = {
-    "Основной": "main",
-    "Атакующий": "attack", 
-    "Дефенс": "defense",
-    "Саппорт": "support"
-}
-
-async def get_main_menu_families():
-    families_data = await load_families()
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    for rarity in families_data["families"].keys():
-        if rarity == "Секретная":
-            emoji_circle = "⚫"
-        else:
-            emoji_circle = RARITY_COLORS.get(rarity, "⚪")
-        keyboard.add(InlineKeyboardButton(
-            text=f"{emoji_circle} {rarity} {emoji_circle}",
-            callback_data=family_rarity_cb.new(rarity_name=rarity)
-        ))
-    return keyboard
-
-def get_main_menu_guide():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="💰 Фарм", callback_data="menu_farm"),
-        InlineKeyboardButton(text="⭐ Престиж", callback_data="prestige"),
-        InlineKeyboardButton(text="⚡ Билды", callback_data="menu_builds")
-    )
-    return keyboard
-
-def get_farm_menu():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="🪙 Золото", callback_data="farm_gold"),
-        InlineKeyboardButton(text="👹 Титаны", callback_data="farm_titans"),
-        InlineKeyboardButton(text="🎯 Рейды", callback_data="farm_raids"),
-        InlineKeyboardButton(text="◀️ Назад", callback_data="back_main")
-    )
-    return keyboard
-
-def get_builds_menu():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="👑 Fritz", callback_data="build_fritz"),
-        InlineKeyboardButton(text="⚡ Helos", callback_data="build_helos"),
-        InlineKeyboardButton(text="🗡️ Ackerman", callback_data="build_ackerman"),
-        InlineKeyboardButton(text="🎭 Leonhart", callback_data="build_leonhart"),
-        InlineKeyboardButton(text="◀️ Назад", callback_data="back_main")
-    )
-    return keyboard
-
-def get_fritz_menu():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="🛡️ ОДМ", callback_data="fritz_odm"),
-        InlineKeyboardButton(text="👊 Атак титан", callback_data="fritz_attack"),
-        InlineKeyboardButton(text="💃 Фем титан", callback_data="fritz_female"),
-        InlineKeyboardButton(text="◀️ Назад", callback_data="menu_builds")
-    )
-    return keyboard
-
-def get_helos_menu():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="🛡️ ОДМ", callback_data="helos_odm"),
-        InlineKeyboardButton(text="⚡ Громовые Копья", callback_data="helos_spears"),
-        InlineKeyboardButton(text="📈 Баффер", callback_data="helos_buffer"),
-        InlineKeyboardButton(text="◀️ Назад", callback_data="menu_builds")
-    )
-    return keyboard
-
-def get_ackerman_menu():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="🛡️ ОДМ", callback_data="ackerman_odm"),
-        InlineKeyboardButton(text="⚡ Громовые Копья", callback_data="ackerman_spears"),
-        InlineKeyboardButton(text="◀️ Назад", callback_data="menu_builds")
-    )
-    return keyboard
-
-def get_leonhart_menu():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="💃 Фемка", callback_data="leonhart_female"),
-        InlineKeyboardButton(text="◀️ Назад", callback_data="menu_builds")
-    )
-    return keyboard
-
-def get_main_menu_memories():
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    keyboard.add(
-        InlineKeyboardButton(text="⭐", callback_data="mem_1"),
-        InlineKeyboardButton(text="⭐⭐", callback_data="mem_2"),
-        InlineKeyboardButton(text="⭐⭐⭐", callback_data="mem_3"),
-        InlineKeyboardButton(text="⭐⭐⭐⭐", callback_data="mem_4")
-    )
-    return keyboard
-
-def get_memories_keyboard(memories_dict, page=0, rarity=""):
-    memories_list = list(memories_dict.items())
-    start_idx = page * 5
-    end_idx = start_idx + 5
-    page_memories = memories_list[start_idx:end_idx]
-    
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    
-    for memory_name, _ in page_memories:
-        keyboard.add(InlineKeyboardButton(
-            text=memory_name,
-            callback_data=memory_cb.new(rarity=rarity, memory_name=memory_name)
-        ))
-    
-    navigation_buttons = []
-    if page > 0:
-        navigation_buttons.append(InlineKeyboardButton(
-            text="⬅️", 
-            callback_data=mempage_cb.new(rarity=rarity, page=page-1)
-        ))
-    
-    navigation_buttons.append(InlineKeyboardButton(
-        text="🏠", 
-        callback_data="mem_home"
-    ))
-    
-    if end_idx < len(memories_list):
-        navigation_buttons.append(InlineKeyboardButton(
-            text="➡️", 
-            callback_data=mempage_cb.new(rarity=rarity, page=page+1)
-        ))
-    
-    if navigation_buttons:
-        keyboard.row(*navigation_buttons)
-    
-    return keyboard
-
-async def find_family(family_name):
+async def find_family(family_name: str) -> Tuple[Optional[Dict], Optional[str]]:
+    """Поиск фамилии по имени"""
     families_data = await load_families()
     for rarity, families in families_data["families"].items():
         for family in families:
@@ -309,63 +221,239 @@ async def find_family(family_name):
                 return family, rarity
     return None, None
 
-@dp.message_handler(Command("AotrOn"))
-async def cmd_verification_on(message: types.Message):
+
+def get_rarity_emoji(rarity: str) -> str:
+    """Получить эмодзи для редкости"""
+    if rarity == "Секретная":
+        return "⚫"
+    return RARITY_COLORS.get(rarity, "⚪")
+
+
+# ===================== Клавиатуры для гайдов =====================
+def get_main_menu_families() -> InlineKeyboardMarkup:
+    """Главное меню фамилий"""
+    builder = InlineKeyboardBuilder()
+    # Заглушка, реальные данные будут загружаться в обработчике
+    return builder.as_markup()
+
+
+async def get_families_keyboard() -> InlineKeyboardMarkup:
+    """Асинхронное получение клавиатуры фамилий"""
+    families_data = await load_families()
+    builder = InlineKeyboardBuilder()
+
+    for rarity in families_data["families"].keys():
+        emoji_circle = get_rarity_emoji(rarity)
+        builder.button(
+            text=f"{emoji_circle} {rarity} {emoji_circle}",
+            callback_data=f"family_rarity:{rarity}",
+        )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_main_menu_guide() -> InlineKeyboardMarkup:
+    """Главное меню гайдов"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="💰 Фарм", callback_data="menu_farm")
+    builder.button(text="⭐ Престиж", callback_data="prestige")
+    builder.button(text="⚡ Билды", callback_data="menu_builds")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_farm_menu() -> InlineKeyboardMarkup:
+    """Меню фарма"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🪙 Золото", callback_data="farm_gold")
+    builder.button(text="👹 Титаны", callback_data="farm_titans")
+    builder.button(text="🎯 Рейды", callback_data="farm_raids")
+    builder.button(text="◀️ Назад", callback_data="back_main")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_builds_menu() -> InlineKeyboardMarkup:
+    """Меню билдов"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="👑 Fritz", callback_data="build_fritz")
+    builder.button(text="⚡ Helos", callback_data="build_helos")
+    builder.button(text="🗡️ Ackerman", callback_data="build_ackerman")
+    builder.button(text="🎭 Leonhart", callback_data="build_leonhart")
+    builder.button(text="◀️ Назад", callback_data="back_main")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_fritz_menu() -> InlineKeyboardMarkup:
+    """Меню билдов Fritz"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🛡️ ОДМ", callback_data="fritz_odm")
+    builder.button(text="👊 Атак титан", callback_data="fritz_attack")
+    builder.button(text="💃 Фем титан", callback_data="fritz_female")
+    builder.button(text="◀️ Назад", callback_data="menu_builds")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_helos_menu() -> InlineKeyboardMarkup:
+    """Меню билдов Helos"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🛡️ ОДМ", callback_data="helos_odm")
+    builder.button(text="⚡ Громовые Копья", callback_data="helos_spears")
+    builder.button(text="📈 Баффер", callback_data="helos_buffer")
+    builder.button(text="◀️ Назад", callback_data="menu_builds")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_ackerman_menu() -> InlineKeyboardMarkup:
+    """Меню билдов Ackerman"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🛡️ ОДМ", callback_data="ackerman_odm")
+    builder.button(text="⚡ Громовые Копья", callback_data="ackerman_spears")
+    builder.button(text="◀️ Назад", callback_data="menu_builds")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_leonhart_menu() -> InlineKeyboardMarkup:
+    """Меню билдов Leonhart"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="💃 Фемка", callback_data="leonhart_female")
+    builder.button(text="◀️ Назад", callback_data="menu_builds")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_main_menu_memories() -> InlineKeyboardMarkup:
+    """Главное меню воспоминаний"""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="⭐", callback_data="mem_1")
+    builder.button(text="⭐⭐", callback_data="mem_2")
+    builder.button(text="⭐⭐⭐", callback_data="mem_3")
+    builder.button(text="⭐⭐⭐⭐", callback_data="mem_4")
+    builder.adjust(4)
+    return builder.as_markup()
+
+
+def get_memories_keyboard(
+    memories_dict: Dict, page: int = 0, rarity: str = ""
+) -> InlineKeyboardMarkup:
+    """Клавиатура для списка воспоминаний"""
+    memories_list = list(memories_dict.items())
+    start_idx = page * 5
+    end_idx = start_idx + 5
+    page_memories = memories_list[start_idx:end_idx]
+
+    builder = InlineKeyboardBuilder()
+
+    for memory_name, _ in page_memories:
+        builder.button(
+            text=memory_name,
+            callback_data=f"memory:{rarity}:{memory_name}",
+        )
+
+    nav_builder = InlineKeyboardBuilder()
+    if page > 0:
+        nav_builder.button(
+            text="⬅️", callback_data=f"mempage:{rarity}:{page - 1}"
+        )
+
+    nav_builder.button(text="🏠", callback_data="mem_home")
+
+    if end_idx < len(memories_list):
+        nav_builder.button(
+            text="➡️", callback_data=f"mempage:{rarity}:{page + 1}"
+        )
+
+    if nav_builder.buttons:
+        builder.attach(nav_builder)
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+# ===================== Middleware =====================
+@dp.callback_query.middleware()
+async def check_verification_middleware(
+    handler, event: CallbackQuery, data: dict
+):
+    """Middleware для проверки верификации чата"""
+    if not check_chat_verification(event.message.chat.id):
+        await event.answer("Чат не верифицирован", show_alert=True)
+        return
+    return await handler(event, data)
+
+
+# ===================== Обработчики команд =====================
+@dp.message(Command("AotrOn"))
+async def cmd_verification_on(message: Message):
+    """Включение верификации чата"""
     if message.from_user.id != CREATOR_ID:
         await message.answer("Нет прав.")
         return
-    
+
     chat_id = message.chat.id
-    conn = sqlite3.connect('verified_mega_aotr.db')
-    cursor = conn.cursor()
-    cursor.execute('INSERT OR REPLACE INTO verified_chats (chat_id, verified) VALUES (?, ?)', (chat_id, 1))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO verified_chats (chat_id, verified) VALUES (?, ?)",
+            (chat_id, 1),
+        )
+        conn.commit()
     await message.answer("Успех.")
 
-@dp.message_handler(Command("AotrOff"))
-async def cmd_verification_off(message: types.Message):
+
+@dp.message(Command("AotrOff"))
+async def cmd_verification_off(message: Message):
+    """Выключение верификации чата"""
     if message.from_user.id != CREATOR_ID:
         await message.answer("Нет прав.")
         return
-    
+
     chat_id = message.chat.id
-    conn = sqlite3.connect('verified_mega_aotr.db')
-    cursor = conn.cursor()
-    cursor.execute('INSERT OR REPLACE INTO verified_chats (chat_id, verified) VALUES (?, ?)', (chat_id, 0))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO verified_chats (chat_id, verified) VALUES (?, ?)",
+            (chat_id, 0),
+        )
+        conn.commit()
     await message.answer("Отключение...")
 
-@dp.message_handler(Command("start_aotrcode"))
-async def start_handler(message: types.Message):
+
+@dp.message(Command("start_aotrcode"))
+async def start_handler(message: Message):
+    """Стартовая команда"""
     await message.answer("Бот активен все збс.")
 
-@dp.message_handler(Command("code"))
-async def code_command(message: types.Message):
+
+@dp.message(Command("code"))
+async def code_command(message: Message):
+    """Команда для просмотра кодов"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
-    
+
     user_id = message.from_user.id
     codes = await load_codes()
     max_page = (len(codes) - 1) // CODES_PER_PAGE
-    
+
     text = format_codes_page(codes, 0)
-    keyboard = get_keyboard(0, max_page, user_id)
-    await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
+    keyboard = get_codes_keyboard(0, max_page, user_id)
+    await message.answer(text, reply_markup=keyboard)
     await message.delete()
 
-@dp.callback_query_handler(page_cb.filter())
-async def process_callback_page(callback: types.CallbackQuery, callback_data: dict):
+
+@dp.callback_query(F.data.startswith("page:"))
+async def process_callback_page(callback: CallbackQuery):
+    """Обработка пагинации кодов"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = int(callback_data["user_id"])
-    page = int(callback_data["page_num"])
-    
+
+    _, user_id_str, page_str = callback.data.split(":")
+    user_id = int(user_id_str)
+    page = int(page_str)
+
     if callback.from_user.id != user_id:
         return
 
@@ -373,716 +461,594 @@ async def process_callback_page(callback: types.CallbackQuery, callback_data: di
     max_page = (len(codes) - 1) // CODES_PER_PAGE
 
     text = format_codes_page(codes, page)
-    keyboard = get_keyboard(page, max_page, user_id)
+    keyboard = get_codes_keyboard(page, max_page, user_id)
 
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
-    except MessageNotModified:
+        await callback.message.edit_text(text, reply_markup=keyboard)
+    except:
         pass
 
-@dp.message_handler(Command("families"))
-async def cmd_families(message: types.Message):
+
+@dp.message(Command("families"))
+async def cmd_families(message: Message):
+    """Команда для просмотра фамилий"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
-    
-    keyboard = await get_main_menu_families()
+
     user_id = message.from_user.id
-    
+    keyboard = await get_families_keyboard()
+
     if message.reply_to_message:
         msg = await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=message.reply_to_message.message_id,
             text="Фамилии:",
-            reply_markup=keyboard
+            reply_markup=keyboard,
         )
         save_user_session(user_id, "families", msg.message_id)
     else:
         msg = await message.answer("Фамилии:", reply_markup=keyboard)
         save_user_session(user_id, "families", msg.message_id)
-    
+
     await message.delete()
 
-@dp.message_handler(Command("search"))
-async def cmd_search(message: types.Message):
+
+@dp.message(Command("search"))
+async def cmd_search(message: Message):
+    """Поиск фамилии"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
-    
+
     if len(message.text.split()) < 2:
         await message.answer("Правильный формат: /search [фамилия]")
         return
-    
+
     family_name = " ".join(message.text.split()[1:])
     family_data, rarity = await find_family(family_name)
-    
+
     if not family_data:
         await message.answer(f"Фамилии '{family_name}' нема")
         return
-    
-    if rarity == "Секретная":
-        emoji_circle = "⚫"
-    else:
-        emoji_circle = RARITY_COLORS.get(rarity, "⚪")
-    
+
+    emoji_circle = get_rarity_emoji(rarity)
+
     text = f"{emoji_circle} Фамилия: {family_data['name']}\n📊 Редкость: {rarity}\n\n"
-    
+
     for buff in family_data["buffs"]:
         emoji = EMOJI_MAP.get(buff["type"], "⚫")
         if buff["description"]:
             text += f"{emoji} {buff['name']}\n   📝 {buff['description']}\n\n"
         else:
             text += f"{emoji} {buff['name']}\n\n"
-    
+
     await message.answer(text)
     await message.delete()
 
-@dp.callback_query_handler(family_rarity_cb.filter())
-async def show_families(callback: CallbackQuery, callback_data: dict):
+
+@dp.callback_query(F.data.startswith("family_rarity:"))
+async def show_families(callback: CallbackQuery):
+    """Показать фамилии по редкости"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "families"):
         await callback.answer("Не твои кнопки, используй /families", show_alert=True)
         return
-    
-    rarity = callback_data["rarity_name"]
+
+    rarity = callback.data.split(":", 1)[1]
     families_data = await load_families()
     families = families_data["families"].get(rarity, [])
-    
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    if rarity == "Секретная":
-        emoji_circle = "⚫"
-    else:
-        emoji_circle = RARITY_COLORS.get(rarity, "⚪")
-    
+
+    builder = InlineKeyboardBuilder()
+    emoji_circle = get_rarity_emoji(rarity)
+
     for family in families:
-        keyboard.add(InlineKeyboardButton(
+        builder.button(
             text=f"{emoji_circle} {family['name']} {emoji_circle}",
-            callback_data=family_cb.new(rarity=rarity, family_name=family['name'])
-        ))
-    
-    keyboard.add(InlineKeyboardButton(
-        text="⬅️ Назад",
-        callback_data="back_to_main_families"
-    ))
-    
+            callback_data=f"family:{rarity}:{family['name']}",
+        )
+
+    builder.button(text="⬅️ Назад", callback_data="back_to_main_families")
+    builder.adjust(1)
+
     try:
         await callback.message.edit_text(
-            f"🎲 Фамилия: {rarity}\nВыбирай:",
-            reply_markup=keyboard
+            f"🎲 Фамилия: {rarity}\nВыбирай:", reply_markup=builder.as_markup()
         )
-    except MessageNotModified:
+    except:
         pass
 
-@dp.callback_query_handler(family_cb.filter())
-async def show_family_info(callback: CallbackQuery, callback_data: dict):
+
+@dp.callback_query(F.data.startswith("family:"))
+async def show_family_info(callback: CallbackQuery):
+    """Показать информацию о фамилии"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "families"):
         await callback.answer("Не твои кнопки, используй /families", show_alert=True)
         return
-    
-    rarity = callback_data["rarity"]
-    family_name = callback_data["family_name"]
-    
+
+    _, rarity, family_name = callback.data.split(":", 2)
+
     families_data = await load_families()
     family_data = None
     for family in families_data["families"][rarity]:
         if family["name"] == family_name:
             family_data = family
             break
-    
+
     if not family_data:
         return
-    
-    if rarity == "Секретная":
-        emoji_circle = "⚫"
-    else:
-        emoji_circle = RARITY_COLORS.get(rarity, "⚪")
-    
+
+    emoji_circle = get_rarity_emoji(rarity)
+
     text = f"{emoji_circle} Фамилия: {family_name}\n📊 Редкость: {rarity}\n\n"
-    
+
     for buff in family_data["buffs"]:
         emoji = EMOJI_MAP.get(buff["type"], "⚫")
         if buff["description"]:
             text += f"{emoji} {buff['name']}\n   📝 {buff['description']}\n\n"
         else:
             text += f"{emoji} {buff['name']}\n\n"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(
+
+    builder = InlineKeyboardBuilder()
+    builder.button(
         text="⬅️ Назад к фамилиям",
-        callback_data=family_rarity_cb.new(rarity_name=rarity)
-    ))
-    
+        callback_data=f"family_rarity:{rarity}",
+    )
+
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
-    except MessageNotModified:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
         pass
 
-@dp.callback_query_handler(Text(equals="back_to_main_families"))
+
+@dp.callback_query(F.data == "back_to_main_families")
 async def back_to_main_families(callback: CallbackQuery):
+    """Возврат в главное меню фамилий"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "families"):
         await callback.answer("Не твои кнопки, используй /families", show_alert=True)
         return
-    
-    keyboard = await get_main_menu_families()
+
+    keyboard = await get_families_keyboard()
     try:
         await callback.message.edit_text("Фамилии:", reply_markup=keyboard)
-    except MessageNotModified:
+    except:
         pass
 
-@dp.message_handler(Command("guide"))
+
+@dp.message(Command("guide"))
 async def cmd_guide(message: Message):
-    if not check_chat_verification(message.chat.id):
-        await message.answer("Бот не верифицирован в этом чате..")
-        return
-    
-    user_id = message.from_user.id
-    
-    msg = await message.answer(
-        "🎮 Выбирай:",
-        reply_markup=get_main_menu_guide()
-    )
-    
-    save_user_session(user_id, "guide", msg.message_id)
-    await message.delete()
-
-@dp.callback_query_handler(Text(equals="menu_farm"))
-async def menu_farm(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "💰 Фарм:",
-            reply_markup=get_farm_menu()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="menu_builds"))
-async def menu_builds(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "⚡ Билды:",
-            reply_markup=get_builds_menu()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="prestige"))
-async def menu_prestige(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    config_data = await load_config()
-    text = config_data.get("prestige", {}).get("text", "Информация о престиже")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="back_main"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="farm_gold"))
-async def farm_gold(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    config_data = await load_config()
-    text = config_data.get("farm", {}).get("gold", "Информация о фарме золота")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="menu_farm"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="farm_titans"))
-async def farm_titans(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    config_data = await load_config()
-    text = config_data.get("farm", {}).get("titans", "Информация о фарме титанов")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="menu_farm"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="farm_raids"))
-async def farm_raids(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    config_data = await load_config()
-    text = config_data.get("farm", {}).get("raids", "Информация о рейдах")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="menu_farm"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="build_fritz"))
-async def build_fritz(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "👑 Билды Fritz:",
-            reply_markup=get_fritz_menu()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="build_helos"))
-async def build_helos(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "⚡ Билды Helos:",
-            reply_markup=get_helos_menu()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="build_ackerman"))
-async def build_ackerman(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "🗡️ Билды Ackerman:",
-            reply_markup=get_ackerman_menu()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="build_leonhart"))
-async def build_leonhart(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "🎭 Билды Leonhart:",
-            reply_markup=get_leonhart_menu()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(lambda c: c.data.startswith("fritz_"))
-async def handle_fritz(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    build_type = callback.data
-    config_data = await load_config()
-    text = config_data.get("builds", {}).get("fritz", {}).get(build_type, "Информация о билде")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="build_fritz"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(lambda c: c.data.startswith("helos_"))
-async def handle_helos(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    build_type = callback.data
-    config_data = await load_config()
-    text = config_data.get("builds", {}).get("helos", {}).get(build_type, "Информация о билде")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="build_helos"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(lambda c: c.data.startswith("ackerman_"))
-async def handle_ackerman(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    build_type = callback.data
-    config_data = await load_config()
-    text = config_data.get("builds", {}).get("ackerman", {}).get(build_type, "Информация о билде")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="build_ackerman"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(lambda c: c.data.startswith("leonhart_"))
-async def handle_leonhart(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    build_type = callback.data
-    config_data = await load_config()
-    text = config_data.get("builds", {}).get("leonhart", {}).get(build_type, "Информация о билде")
-    
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton(text="◀️ Назад", callback_data="build_leonhart"))
-    
-    try:
-        await callback.message.edit_text(
-            text,
-            reply_markup=keyboard
-        )
-    except MessageNotModified:
-        pass
-
-@dp.callback_query_handler(Text(equals="back_main"))
-async def back_main(callback: CallbackQuery):
-    await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
-    user_id = callback.from_user.id
-    message_id = callback.message.message_id
-    
-    if not check_session_access(user_id, message_id, "guide"):
-        return
-    
-    try:
-        await callback.message.edit_text(
-            "🎮 Выбирай:",
-            reply_markup=get_main_menu_guide()
-        )
-    except MessageNotModified:
-        pass
-
-@dp.message_handler(Command("memories"))
-async def cmd_memories(message: types.Message):
+    """Команда для гайдов"""
     if not check_chat_verification(message.chat.id):
         await message.answer("Бот не верифицирован в этом чате.")
         return
-    
+
     user_id = message.from_user.id
-    
+
     msg = await message.answer(
-        "Мемори:",
-        reply_markup=get_main_menu_memories()
+        "🎮 Выбирай:", reply_markup=get_main_menu_guide()
     )
-    
+
+    save_user_session(user_id, "guide", msg.message_id)
+    await message.delete()
+
+
+# ===================== Обработчики для гайдов =====================
+@dp.callback_query(F.data == "menu_farm")
+async def menu_farm(callback: CallbackQuery):
+    """Меню фарма"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "💰 Фарм:", reply_markup=get_farm_menu()
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "menu_builds")
+async def menu_builds(callback: CallbackQuery):
+    """Меню билдов"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "⚡ Билды:", reply_markup=get_builds_menu()
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "prestige")
+async def menu_prestige(callback: CallbackQuery):
+    """Информация о престиже"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    config_data = await load_config()
+    text = config_data.get("prestige", {}).get("text", "Информация о престиже")
+
+    if not text or text.strip() == "":
+        text = "нихуя нема"
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data="back_main")
+
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "farm_gold")
+async def farm_gold(callback: CallbackQuery):
+    """Фарм золота"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    config_data = await load_config()
+    text = config_data.get("farm", {}).get("gold", "Информация о фарме золота")
+
+    if not text or text.strip() == "":
+        text = "нихуя нема"
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data="menu_farm")
+
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "farm_titans")
+async def farm_titans(callback: CallbackQuery):
+    """Фарм титанов"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    config_data = await load_config()
+    text = config_data.get("farm", {}).get("titans", "Информация о фарме титанов")
+
+    if not text or text.strip() == "":
+        text = "нихуя нема"
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data="menu_farm")
+
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "farm_raids")
+async def farm_raids(callback: CallbackQuery):
+    """Фарм рейдов"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    config_data = await load_config()
+    text = config_data.get("farm", {}).get("raids", "Информация о рейдах")
+
+    if not text or text.strip() == "":
+        text = "нихуя нема"
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data="menu_farm")
+
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "build_fritz")
+async def build_fritz(callback: CallbackQuery):
+    """Билды Fritz"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "👑 Билды Fritz:", reply_markup=get_fritz_menu()
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "build_helos")
+async def build_helos(callback: CallbackQuery):
+    """Билды Helos"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "⚡ Билды Helos:", reply_markup=get_helos_menu()
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "build_ackerman")
+async def build_ackerman(callback: CallbackQuery):
+    """Билды Ackerman"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "🗡️ Билды Ackerman:", reply_markup=get_ackerman_menu()
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "build_leonhart")
+async def build_leonhart(callback: CallbackQuery):
+    """Билды Leonhart"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "🎭 Билды Leonhart:", reply_markup=get_leonhart_menu()
+        )
+    except:
+        pass
+
+
+@dp.callback_query(F.data.startswith(("fritz_", "helos_", "ackerman_", "leonhart_")))
+async def handle_builds(callback: CallbackQuery):
+    """Обработка конкретных билдов"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    build_type = callback.data
+    parts = build_type.split("_")
+    character = parts[0]
+
+    config_data = await load_config()
+    text = (
+        config_data.get("builds", {})
+        .get(character, {})
+        .get(build_type, "Информация о билде")
+    )
+
+    if not text or text.strip() == "":
+        text = "нихуя нема"
+
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data=f"build_{character}")
+
+    try:
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
+    except:
+        pass
+
+
+@dp.callback_query(F.data == "back_main")
+async def back_main(callback: CallbackQuery):
+    """Возврат в главное меню гайдов"""
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    message_id = callback.message.message_id
+
+    if not check_session_access(user_id, message_id, "guide"):
+        return
+
+    try:
+        await callback.message.edit_text(
+            "🎮 Выбирай:", reply_markup=get_main_menu_guide()
+        )
+    except:
+        pass
+
+
+# ===================== Обработчики для воспоминаний =====================
+@dp.message(Command("memories"))
+async def cmd_memories(message: Message):
+    """Команда для просмотра воспоминаний"""
+    if not check_chat_verification(message.chat.id):
+        await message.answer("Бот не верифицирован в этом чате.")
+        return
+
+    user_id = message.from_user.id
+
+    msg = await message.answer(
+        "Мемори:", reply_markup=get_main_menu_memories()
+    )
+
     save_user_session(user_id, "memories", msg.message_id)
     await message.delete()
 
-@dp.callback_query_handler(lambda c: c.data in ["mem_1", "mem_2", "mem_3", "mem_4"])
+
+@dp.callback_query(F.data.in_(["mem_1", "mem_2", "mem_3", "mem_4"]))
 async def show_memories(callback: CallbackQuery):
+    """Показать воспоминания по редкости"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "memories"):
         return
-    
+
     rarity = callback.data.split("_")[1]
     memories_data = await load_memories()
     memories = memories_data.get(f"{rarity}_star", {})
-    
+
     if not memories:
         return
-    
+
     keyboard = get_memories_keyboard(memories, 0, rarity)
     try:
-        await callback.message.edit_text("выбери нужное мемори:", reply_markup=keyboard)
-    except MessageNotModified:
+        await callback.message.edit_text(
+            "выбери нужное мемори:", reply_markup=keyboard
+        )
+    except:
         pass
 
-@dp.callback_query_handler(mempage_cb.filter())
-async def change_memory_page(callback: CallbackQuery, callback_data: dict):
+
+@dp.callback_query(F.data.startswith("mempage:"))
+async def change_memory_page(callback: CallbackQuery):
+    """Смена страницы воспоминаний"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "memories"):
         return
-    
+
     try:
-        rarity = callback_data["rarity"]
-        page = int(callback_data["page"])
-        
+        _, rarity, page_str = callback.data.split(":")
+        page = int(page_str)
+
         memories_data = await load_memories()
         memories = memories_data.get(f"{rarity}_star", {})
-        
+
         if not memories:
             return
-        
+
         keyboard = get_memories_keyboard(memories, page, rarity)
-        await callback.message.edit_text("выбери нужное мемори:", reply_markup=keyboard)
+        await callback.message.edit_text(
+            "выбери нужное мемори:", reply_markup=keyboard
+        )
     except:
         return
 
-@dp.callback_query_handler(memory_cb.filter())
-async def show_memory_info(callback: CallbackQuery, callback_data: dict):
+
+@dp.callback_query(F.data.startswith("memory:"))
+async def show_memory_info(callback: CallbackQuery):
+    """Показать информацию о воспоминании"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "memories"):
         return
-    
+
     try:
-        rarity = callback_data["rarity"]
-        memory_name = callback_data["memory_name"]
-        
+        _, rarity, memory_name = callback.data.split(":", 2)
+
         memories_data = await load_memories()
         memories = memories_data.get(f"{rarity}_star", {})
         memory_description = memories.get(memory_name)
-        
+
         if not memory_description:
             return
-        
+
         text = f"<b>{memory_name}</b>\n\n{memory_description}"
-        
-        keyboard = InlineKeyboardMarkup()
-        keyboard.add(InlineKeyboardButton(text="⬅️", callback_data=f"mem_{rarity}"))
-        
-        await callback.message.edit_text(text, reply_markup=keyboard)
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="⬅️", callback_data=f"mem_{rarity}")
+
+        await callback.message.edit_text(text, reply_markup=builder.as_markup())
     except:
         return
 
-@dp.callback_query_handler(Text(equals="mem_home"))
+
+@dp.callback_query(F.data == "mem_home")
 async def back_to_memories_main(callback: CallbackQuery):
+    """Возврат в главное меню воспоминаний"""
     await callback.answer()
-    
-    if not check_chat_verification(callback.message.chat.id):
-        return
-    
+
     user_id = callback.from_user.id
     message_id = callback.message.message_id
-    
+
     if not check_session_access(user_id, message_id, "memories"):
         return
-    
+
     try:
-        await callback.message.edit_text("Мемори:", reply_markup=get_main_menu_memories())
-    except MessageNotModified:
+        await callback.message.edit_text(
+            "Мемори:", reply_markup=get_main_menu_memories()
+        )
+    except:
         pass
 
+
+# ===================== Запуск бота =====================
 async def main():
+    """Главная функция"""
     init_db()
-    await dp.start_polling()
+    print("Бот запущен...")
+    await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
