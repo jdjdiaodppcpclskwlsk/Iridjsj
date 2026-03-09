@@ -2,6 +2,7 @@ import asyncio
 import json
 import sqlite3
 from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
 
 import aiofiles
 from aiogram import Bot, Dispatcher, F, types
@@ -24,11 +25,6 @@ from perks import (
     load_perks_data, get_main_menu_perks, get_categories_keyboard,
     get_perks_list_keyboard, format_perk_effects, find_perk,
     RARITY_EMOJI, CATEGORY_NAMES, CATEGORY_EMOJI
-)
-
-from admin import (
-    get_admin_menu, MailingStates, send_mailing,
-    get_all_chats, get_all_users
 )
 
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
@@ -64,6 +60,9 @@ PERK_TYPES = {
     "Саппорт": "support",
 }
 
+class MailingStates(StatesGroup):
+    waiting_for_text = State()
+
 
 def init_db() -> None:
     with sqlite3.connect("verified_mega_aotr.db") as conn:
@@ -71,25 +70,33 @@ def init_db() -> None:
         conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA cache_size=10000")
 
-        conn.execute(
-            """
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                first_name TEXT,
+                username TEXT,
+                joined_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS verified_chats (
                 chat_id INTEGER PRIMARY KEY,
-                verified BOOLEAN NOT NULL DEFAULT 0
+                chat_title TEXT,
+                verified BOOLEAN NOT NULL DEFAULT 1,
+                added_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """
-        )
+        """)
 
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_sessions (
                 user_id INTEGER,
                 session_type TEXT,
                 message_id INTEGER,
                 PRIMARY KEY (user_id, session_type)
             )
-        """
-        )
+        """)
         conn.commit()
 
 
@@ -122,6 +129,42 @@ def check_session_access(user_id: int, message_id: int, session_type: str) -> bo
     return saved_message_id == message_id
 
 
+def add_user_to_db(user_id: int, first_name: str, username: str = None) -> None:
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO users (user_id, first_name, username, last_activity)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        """, (user_id, first_name, username))
+        conn.commit()
+
+
+def update_user_activity(user_id: int) -> None:
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute("""
+            UPDATE users SET last_activity = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        """, (user_id,))
+        conn.commit()
+
+
+def add_chat_to_db(chat_id: int, chat_title: str) -> None:
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute("""
+            INSERT OR IGNORE INTO verified_chats (chat_id, chat_title, verified)
+            VALUES (?, ?, 1)
+        """, (chat_id, chat_title))
+        conn.commit()
+
+
+def remove_chat_from_db(chat_id: int) -> None:
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        conn.execute("""
+            UPDATE verified_chats SET verified = 0
+            WHERE chat_id = ?
+        """, (chat_id,))
+        conn.commit()
+
+
 def check_chat_verification(chat_id: int) -> bool:
     if chat_id > 0:
         return True
@@ -131,6 +174,56 @@ def check_chat_verification(chat_id: int) -> bool:
             "SELECT verified FROM verified_chats WHERE chat_id = ?", (chat_id,)
         ).fetchone()
         return result is not None and result[0] == 1
+
+
+def get_all_verified_chats() -> List[Tuple[int, str]]:
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        result = conn.execute(
+            "SELECT chat_id, chat_title FROM verified_chats WHERE verified = 1"
+        ).fetchall()
+        return result
+
+
+def get_all_users() -> List[Tuple[int, str, str]]:
+    with sqlite3.connect("verified_mega_aotr.db") as conn:
+        result = conn.execute(
+            "SELECT user_id, first_name, username FROM users"
+        ).fetchall()
+        return result
+
+
+def get_admin_menu() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📨 Рассылка", callback_data="admin_mailing")
+    builder.button(text="📊 Статистика", callback_data="admin_stats")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+async def send_mailing(bot: Bot, text: str) -> Tuple[int, int]:
+    chats = get_all_verified_chats()
+    users = get_all_users()
+    
+    sent_count = 0
+    failed_count = 0
+    
+    for chat in chats:
+        try:
+            await bot.send_message(chat[0], text)
+            sent_count += 1
+            await asyncio.sleep(0.05)
+        except:
+            failed_count += 1
+    
+    for user in users:
+        try:
+            await bot.send_message(user[0], text)
+            sent_count += 1
+            await asyncio.sleep(0.05)
+        except:
+            failed_count += 1
+    
+    return sent_count, failed_count
 
 
 async def load_memories() -> Dict[str, Any]:
@@ -349,6 +442,17 @@ def get_memories_keyboard(
     return builder.as_markup()
 
 
+@dp.message.middleware()
+async def track_users_middleware(handler, event: Message, data: dict):
+    if event.from_user:
+        add_user_to_db(
+            event.from_user.id,
+            event.from_user.first_name,
+            event.from_user.username
+        )
+    return await handler(event, data)
+
+
 @dp.callback_query.middleware()
 async def check_verification_middleware(
     handler, event: CallbackQuery, data: dict
@@ -366,13 +470,11 @@ async def cmd_verification_on(message: Message):
         return
 
     chat_id = message.chat.id
-    with sqlite3.connect("verified_mega_aotr.db") as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO verified_chats (chat_id, verified) VALUES (?, ?)",
-            (chat_id, 1),
-        )
-        conn.commit()
-    await message.answer("Успех.")
+    chat_title = message.chat.title or "Личный чат"
+    
+    add_chat_to_db(chat_id, chat_title)
+    
+    await message.answer("✅ Чат верифицирован.")
 
 
 @dp.message(Command("AotrOff"))
@@ -382,13 +484,9 @@ async def cmd_verification_off(message: Message):
         return
 
     chat_id = message.chat.id
-    with sqlite3.connect("verified_mega_aotr.db") as conn:
-        conn.execute(
-            "INSERT OR REPLACE INTO verified_chats (chat_id, verified) VALUES (?, ?)",
-            (chat_id, 0),
-        )
-        conn.commit()
-    await message.answer("Отключение...")
+    remove_chat_from_db(chat_id)
+    
+    await message.answer("❌ Верификация отключена.")
 
 
 @dp.message(Command("start_aotrcode"))
@@ -1225,8 +1323,26 @@ async def admin_mailing(callback: CallbackQuery, state: FSMContext):
     )
 
 
+@dp.callback_query(F.data == "admin_stats")
+async def admin_stats(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    
+    users = get_all_users()
+    chats = get_all_verified_chats()
+    
+    text = f"📊 Статистика:\n\n"
+    text += f"👤 Пользователей: {len(users)}\n"
+    text += f"💬 Чатов: {len(chats)}"
+    
+    await callback.message.edit_text(text, reply_markup=get_admin_menu())
+
+
 @dp.message(MailingStates.waiting_for_text)
-async def process_mailing_text(message: Message, state: FSMContext, bot: Bot):
+async def process_mailing_text(message: Message, state: FSMContext):
     if message.from_user.id != CREATOR_ID:
         await message.answer("Нет прав.")
         await state.clear()
