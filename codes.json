@@ -1,5 +1,6 @@
 {
   "codes": [
+    { "code": "THANKSFORSTAYINGWITHUS", "reward": "300 спинов + 10 ключей +", "active": true },
     { "code": "THANKSFORSTAYINGWITHUS", "reward": "300 спинов + 10 ключей + 1 Х2 зелье удачи (1ч) + 1 Х2 зелье монет (1ч) + 1 Х2 зелье опыта (1ч)", "active": false },
     { "code": "CHRISTMAS2025", "reward": "300 спинов + 1 Х2 зелье монет (2ч) + 1 Х2 зелье удачи (2ч) + 1 Х2 зелье опыта (2ч)", "active": false },
     { "code": "LIKES1M", "reward": "400 спинов + 10 ключей + 1 Х2 зелье монет (2ч) + 1 Х2 зелье удачи (2ч) + 1 Х2 зелье опыта (2ч)", "active": false },
