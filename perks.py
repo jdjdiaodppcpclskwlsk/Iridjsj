@@ -118,12 +118,12 @@ def format_perk_effects(perk: Dict) -> str:
     text = ""
     
     if good_effects:
-        text += "\n".join(good_effects)
+        text += "\n\n".join(good_effects)
     
     if bad_effects:
         if good_effects:
             text += "\n\n"
-        text += "\n".join(bad_effects)
+        text += "\n\n".join(bad_effects)
     
     return text.strip()
 
