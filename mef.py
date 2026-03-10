@@ -1418,12 +1418,12 @@ async def my_offers(callback: CallbackQuery):
     offers = get_user_offers(user_id)
     if not offers:
         await callback.message.edit_text(
-            "📋 <b>У вас пока нет заявок</b>",
+            "📋 <b>У тебя пока нет заявок</b>",
             reply_markup=keyboard
         )
     else:
         await callback.message.edit_text(
-            "📋 <b>Ваши заявки:</b>",
+            "📋 <b>Твои заявки:</b>",
             reply_markup=keyboard
         )
 
@@ -1436,7 +1436,7 @@ async def my_offers_page(callback: CallbackQuery):
     keyboard = get_user_offers_keyboard(user_id, page)
     
     await callback.message.edit_text(
-        "📋 <b>Ваши заявки:</b>",
+        "📋 <b>Твои заявки:</b>",
         reply_markup=keyboard
     )
 
@@ -1662,7 +1662,7 @@ async def admin_view_offer(callback: CallbackQuery):
     offer = get_offer_by_id(offer_id)
     
     if not offer:
-        await callback.answer("Заявка не найдена", show_alert=True)
+        await callback.answer("Заявки нема", show_alert=True)
         return
     
     text = format_offer_text(offer, for_admin=True)
@@ -1697,7 +1697,7 @@ async def accept_offer(callback: CallbackQuery):
     await send_offer_notification(bot, offer['user_id'], offer['offer_name'], OfferStatus.ACCEPTED)
     
     await callback.message.edit_text(
-        f"✅ Заявка '{offer['offer_name']}' принята!"
+        f"✅ заявка '{offer['offer_name']}' принята!"
     )
     
     await asyncio.sleep(1)
@@ -1718,14 +1718,14 @@ async def reject_offer(callback: CallbackQuery):
     offer = get_offer_by_id(offer_id)
     
     if not offer:
-        await callback.answer("Заявка не найдена", show_alert=True)
+        await callback.answer("Заявки нема", show_alert=True)
         return
     
     update_offer_status(offer_id, OfferStatus.REJECTED, callback.from_user.id)
     await send_offer_notification(bot, offer['user_id'], offer['offer_name'], OfferStatus.REJECTED)
     
     await callback.message.edit_text(
-        f"❌ Заявка '{offer['offer_name']}' отклонена!"
+        f"❌ заявка '{offer['offer_name']}' отклонена!"
     )
     
     await asyncio.sleep(1)
