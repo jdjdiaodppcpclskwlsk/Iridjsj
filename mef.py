@@ -1308,7 +1308,7 @@ async def create_offer_start(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "📝 <b>Создание заявки</b>\n\n"
         "Шаг 1/3\n"
-        "Введите <b>название идеи</b>:",
+        "Введи <b>название идеи</b>:",
         reply_markup=builder.as_markup()
     )
     
@@ -1335,7 +1335,7 @@ async def process_offer_name(message: Message, state: FSMContext):
     await message.answer(
         "📝 <b>Создание заявки</b>\n\n"
         "Шаг 2/3\n"
-        "Введите <b>описание/принцип работы</b>:",
+        "Введи <b>описание/принцип работы</b>:",
         reply_markup=builder.as_markup()
     )
     
@@ -1353,7 +1353,7 @@ async def process_offer_description(message: Message, state: FSMContext):
     await message.answer(
         "📝 <b>Создание заявки</b>\n\n"
         "Шаг 3/3\n"
-        "Введите <b>чем будет полезно</b>:",
+        "Введи <b>чем будет полезно</b>:",
         reply_markup=builder.as_markup()
     )
     
@@ -1372,7 +1372,7 @@ async def process_offer_benefit(message: Message, state: FSMContext):
     builder.adjust(1)
     
     text = (
-        "📝 <b>Проверьте данные:</b>\n\n"
+        "📝 <b>Проверь данные:</b>\n\n"
         f"1. <b>Название идеи:</b>\n{data['offer_name']}\n\n"
         f"2. <b>Описание/Принцип работы:</b>\n{data['description']}\n\n"
         f"3. <b>Чем будет полезно:</b>\n{data['benefit']}"
