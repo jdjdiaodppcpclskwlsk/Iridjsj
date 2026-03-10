@@ -28,6 +28,14 @@ from perks import (
     RARITY_EMOJI, CATEGORY_NAMES, CATEGORY_EMOJI
 )
 
+from admin import MailingStates, get_admin_menu, send_mailing
+from offer import (
+    OfferStates, OfferStatus, create_offer, get_user_offers,
+    get_offers_by_status, get_offer_by_id, update_offer_status,
+    get_offers_menu, get_user_offers_keyboard, get_offers_list_keyboard,
+    format_offer_text, send_offer_notification, get_offer_main_menu
+)
+
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -60,9 +68,6 @@ PERK_TYPES = {
     "Дефенс": "defense",
     "Саппорт": "support",
 }
-
-class MailingStates(StatesGroup):
-    waiting_for_text = State()
 
 
 def init_db() -> None:
@@ -98,6 +103,23 @@ def init_db() -> None:
                 PRIMARY KEY (user_id, session_type)
             )
         """)
+        
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS offers (
+                offer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                username TEXT,
+                first_name TEXT,
+                offer_name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                benefit TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at TIMESTAMP,
+                reviewed_by INTEGER
+            )
+        """)
+        
         conn.commit()
 
 
@@ -191,40 +213,6 @@ def get_all_users() -> List[Tuple[int, str, str]]:
             "SELECT user_id, first_name, username FROM users"
         ).fetchall()
         return result
-
-
-def get_admin_menu() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="📨 Рассылка", callback_data="admin_mailing")
-    builder.button(text="📊 Статистика", callback_data="admin_stats")
-    builder.adjust(1)
-    return builder.as_markup()
-
-
-async def send_mailing(bot: Bot, text: str) -> Tuple[int, int]:
-    chats = get_all_verified_chats()
-    users = get_all_users()
-    
-    sent_count = 0
-    failed_count = 0
-    
-    for chat in chats:
-        try:
-            await bot.send_message(chat[0], text)
-            sent_count += 1
-            await asyncio.sleep(0.05)
-        except:
-            failed_count += 1
-    
-    for user in users:
-        try:
-            await bot.send_message(user[0], text)
-            sent_count += 1
-            await asyncio.sleep(0.05)
-        except:
-            failed_count += 1
-    
-    return sent_count, failed_count
 
 
 async def load_memories() -> Dict[str, Any]:
@@ -1295,6 +1283,190 @@ async def back_to_main_perks(callback: CallbackQuery):
         pass
 
 
+@dp.message(Command("offer"))
+async def cmd_offer(message: Message, state: FSMContext):
+    if not check_chat_verification(message.chat.id):
+        await message.answer("Бот не верифицирован в этом чате.")
+        return
+    
+    await state.clear()
+    
+    await message.answer(
+        "📬 <b>Ваши идеи для бота:</b>",
+        reply_markup=get_offer_main_menu()
+    )
+    await message.delete()
+
+
+@dp.callback_query(F.data == "create_offer")
+async def create_offer_start(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(text="❌ Отмена", callback_data="cancel_offer")
+    
+    await callback.message.edit_text(
+        "📝 <b>Создание заявки</b>\n\n"
+        "Шаг 1/3\n"
+        "Введите <b>название идеи</b>:",
+        reply_markup=builder.as_markup()
+    )
+    
+    await state.set_state(OfferStates.waiting_for_name)
+
+
+@dp.callback_query(F.data == "cancel_offer")
+async def cancel_offer(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await state.clear()
+    await callback.message.edit_text(
+        "📬 <b>Ваши идеи для бота:</b>",
+        reply_markup=get_offer_main_menu()
+    )
+
+
+@dp.message(OfferStates.waiting_for_name)
+async def process_offer_name(message: Message, state: FSMContext):
+    await state.update_data(offer_name=message.text)
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(text="❌ Отмена", callback_data="cancel_offer")
+    
+    await message.answer(
+        "📝 <b>Создание заявки</b>\n\n"
+        "Шаг 2/3\n"
+        "Введите <b>описание/принцип работы</b>:",
+        reply_markup=builder.as_markup()
+    )
+    
+    await state.set_state(OfferStates.waiting_for_description)
+    await message.delete()
+
+
+@dp.message(OfferStates.waiting_for_description)
+async def process_offer_description(message: Message, state: FSMContext):
+    await state.update_data(description=message.text)
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(text="❌ Отмена", callback_data="cancel_offer")
+    
+    await message.answer(
+        "📝 <b>Создание заявки</b>\n\n"
+        "Шаг 3/3\n"
+        "Введите <b>чем будет полезно</b>:",
+        reply_markup=builder.as_markup()
+    )
+    
+    await state.set_state(OfferStates.waiting_for_benefit)
+    await message.delete()
+
+
+@dp.message(OfferStates.waiting_for_benefit)
+async def process_offer_benefit(message: Message, state: FSMContext):
+    await state.update_data(benefit=message.text)
+    data = await state.get_data()
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Отправить", callback_data="submit_offer")
+    builder.button(text="❌ Отменить", callback_data="cancel_offer")
+    builder.adjust(1)
+    
+    text = (
+        "📝 <b>Проверьте данные:</b>\n\n"
+        f"1. <b>Название идеи:</b>\n{data['offer_name']}\n\n"
+        f"2. <b>Описание/Принцип работы:</b>\n{data['description']}\n\n"
+        f"3. <b>Чем будет полезно:</b>\n{data['benefit']}"
+    )
+    
+    await message.answer(text, reply_markup=builder.as_markup())
+    await message.delete()
+
+
+@dp.callback_query(F.data == "submit_offer")
+async def submit_offer(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    user = callback.from_user
+    
+    offer_id = create_offer(
+        user_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        offer_name=data['offer_name'],
+        description=data['description'],
+        benefit=data['benefit']
+    )
+    
+    await state.clear()
+    await callback.message.edit_text(
+        "✅ <b>Заявка отправлена на рассмотрение!</b>\n"
+        "Ответ придет, когда ее проверят."
+    )
+    
+    await asyncio.sleep(2)
+    await callback.message.edit_text(
+        "📬 <b>Ваши идеи для бота:</b>",
+        reply_markup=get_offer_main_menu()
+    )
+
+
+@dp.callback_query(F.data == "my_offers")
+async def my_offers(callback: CallbackQuery):
+    await callback.answer()
+    user_id = callback.from_user.id
+    keyboard = get_user_offers_keyboard(user_id)
+    
+    offers = get_user_offers(user_id)
+    if not offers:
+        await callback.message.edit_text(
+            "📋 <b>У вас пока нет заявок</b>",
+            reply_markup=keyboard
+        )
+    else:
+        await callback.message.edit_text(
+            "📋 <b>Ваши заявки:</b>",
+            reply_markup=keyboard
+        )
+
+
+@dp.callback_query(F.data.startswith("my_offers_page:"))
+async def my_offers_page(callback: CallbackQuery):
+    await callback.answer()
+    page = int(callback.data.split(":")[1])
+    user_id = callback.from_user.id
+    keyboard = get_user_offers_keyboard(user_id, page)
+    
+    await callback.message.edit_text(
+        "📋 <b>Ваши заявки:</b>",
+        reply_markup=keyboard
+    )
+
+
+@dp.callback_query(F.data.startswith("view_my_offer:"))
+async def view_my_offer(callback: CallbackQuery):
+    await callback.answer()
+    offer_id = int(callback.data.split(":")[1])
+    offer = get_offer_by_id(offer_id)
+    
+    if not offer:
+        await callback.answer("Заявка не найдена", show_alert=True)
+        return
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data="my_offers")
+    
+    text = format_offer_text(offer, for_admin=False)
+    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+
+
+@dp.callback_query(F.data == "back_to_offer_main")
+async def back_to_offer_main(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.edit_text(
+        "📬 <b>Ваши идеи для бота:</b>",
+        reply_markup=get_offer_main_menu()
+    )
+
+
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message, state: FSMContext):
     if message.from_user.id != CREATOR_ID:
@@ -1324,24 +1496,6 @@ async def admin_mailing(callback: CallbackQuery, state: FSMContext):
     )
 
 
-@dp.callback_query(F.data == "admin_stats")
-async def admin_stats(callback: CallbackQuery):
-    if callback.from_user.id != CREATOR_ID:
-        await callback.answer("Нет прав.", show_alert=True)
-        return
-    
-    await callback.answer()
-    
-    users = get_all_users()
-    chats = get_all_verified_chats()
-    
-    text = f"📊 Статистика:\n\n"
-    text += f"👤 Пользователей: {len(users)}\n"
-    text += f"💬 Чатов: {len(chats)}"
-    
-    await callback.message.edit_text(text, reply_markup=get_admin_menu())
-
-
 @dp.message(MailingStates.waiting_for_text)
 async def process_mailing_text(message: Message, state: FSMContext):
     if message.from_user.id != CREATOR_ID:
@@ -1366,6 +1520,232 @@ async def process_mailing_text(message: Message, state: FSMContext):
     )
     
     await state.clear()
+
+
+@dp.callback_query(F.data == "admin_stats")
+async def admin_stats(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    
+    users = get_all_users()
+    chats = get_all_verified_chats()
+    
+    text = f"📊 Статистика:\n\n"
+    text += f"👤 Пользователей: {len(users)}\n"
+    text += f"💬 Чатов: {len(chats)}"
+    
+    await callback.message.edit_text(text, reply_markup=get_admin_menu())
+
+
+@dp.callback_query(F.data == "offers_menu")
+async def offers_menu(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    await callback.message.edit_text(
+        "📬 Управление заявками:",
+        reply_markup=get_offers_menu()
+    )
+
+
+@dp.callback_query(F.data == "offers_pending")
+async def offers_pending(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    keyboard = get_offers_list_keyboard(OfferStatus.PENDING)
+    
+    offers = get_offers_by_status(OfferStatus.PENDING)
+    if not offers:
+        await callback.message.edit_text(
+            "📬 Нет заявок, ожидающих рассмотрения",
+            reply_markup=keyboard
+        )
+    else:
+        await callback.message.edit_text(
+            "📬 Заявки, ожидающие рассмотрения:",
+            reply_markup=keyboard
+        )
+
+
+@dp.callback_query(F.data == "offers_accepted")
+async def offers_accepted(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    keyboard = get_offers_list_keyboard(OfferStatus.ACCEPTED)
+    
+    offers = get_offers_by_status(OfferStatus.ACCEPTED)
+    if not offers:
+        await callback.message.edit_text(
+            "📬 Нет принятых заявок",
+            reply_markup=keyboard
+        )
+    else:
+        await callback.message.edit_text(
+            "📬 Принятые заявки:",
+            reply_markup=keyboard
+        )
+
+
+@dp.callback_query(F.data == "offers_rejected")
+async def offers_rejected(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    keyboard = get_offers_list_keyboard(OfferStatus.REJECTED)
+    
+    offers = get_offers_by_status(OfferStatus.REJECTED)
+    if not offers:
+        await callback.message.edit_text(
+            "📬 Нет отклоненных заявок",
+            reply_markup=keyboard
+        )
+    else:
+        await callback.message.edit_text(
+            "📬 Отклоненные заявки:",
+            reply_markup=keyboard
+        )
+
+
+@dp.callback_query(F.data.startswith("offers_pending_page:"))
+@dp.callback_query(F.data.startswith("offers_accepted_page:"))
+@dp.callback_query(F.data.startswith("offers_rejected_page:"))
+async def offers_page(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    parts = callback.data.split(":")
+    status = parts[0].split("_")[1]
+    page = int(parts[1])
+    
+    status_map = {
+        "pending": OfferStatus.PENDING,
+        "accepted": OfferStatus.ACCEPTED,
+        "rejected": OfferStatus.REJECTED
+    }
+    
+    status_text_map = {
+        "pending": "ожидающих рассмотрения",
+        "accepted": "принятых",
+        "rejected": "отклоненных"
+    }
+    
+    keyboard = get_offers_list_keyboard(status_map[status], page)
+    await callback.message.edit_text(
+        f"📬 Заявки {status_text_map[status]}:",
+        reply_markup=keyboard
+    )
+
+
+@dp.callback_query(F.data.startswith("admin_view_offer:"))
+async def admin_view_offer(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    offer_id = int(callback.data.split(":")[1])
+    offer = get_offer_by_id(offer_id)
+    
+    if not offer:
+        await callback.answer("Заявка не найдена", show_alert=True)
+        return
+    
+    text = format_offer_text(offer, for_admin=True)
+    
+    builder = InlineKeyboardBuilder()
+    
+    if offer['status'] == OfferStatus.PENDING:
+        builder.button(text="✅ Принять", callback_data=f"accept_offer:{offer_id}")
+        builder.button(text="❌ Отклонить", callback_data=f"reject_offer:{offer_id}")
+    
+    builder.button(text="◀️ Назад", callback_data=f"offers_{offer['status']}")
+    builder.adjust(1)
+    
+    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+
+
+@dp.callback_query(F.data.startswith("accept_offer:"))
+async def accept_offer(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    offer_id = int(callback.data.split(":")[1])
+    offer = get_offer_by_id(offer_id)
+    
+    if not offer:
+        await callback.answer("Заявка не найдена", show_alert=True)
+        return
+    
+    update_offer_status(offer_id, OfferStatus.ACCEPTED, callback.from_user.id)
+    await send_offer_notification(bot, offer['user_id'], offer['offer_name'], OfferStatus.ACCEPTED)
+    
+    await callback.message.edit_text(
+        f"✅ Заявка '{offer['offer_name']}' принята!"
+    )
+    
+    await asyncio.sleep(1)
+    await callback.message.edit_text(
+        "📬 Управление заявками:",
+        reply_markup=get_offers_menu()
+    )
+
+
+@dp.callback_query(F.data.startswith("reject_offer:"))
+async def reject_offer(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    offer_id = int(callback.data.split(":")[1])
+    offer = get_offer_by_id(offer_id)
+    
+    if not offer:
+        await callback.answer("Заявка не найдена", show_alert=True)
+        return
+    
+    update_offer_status(offer_id, OfferStatus.REJECTED, callback.from_user.id)
+    await send_offer_notification(bot, offer['user_id'], offer['offer_name'], OfferStatus.REJECTED)
+    
+    await callback.message.edit_text(
+        f"❌ Заявка '{offer['offer_name']}' отклонена!"
+    )
+    
+    await asyncio.sleep(1)
+    await callback.message.edit_text(
+        "📬 Управление заявками:",
+        reply_markup=get_offers_menu()
+    )
+
+
+@dp.callback_query(F.data == "back_to_admin")
+async def back_to_admin(callback: CallbackQuery):
+    if callback.from_user.id != CREATOR_ID:
+        await callback.answer("Нет прав.", show_alert=True)
+        return
+    
+    await callback.answer()
+    await callback.message.edit_text(
+        "🔧 Админ-панель:\nВыбери действие:",
+        reply_markup=get_admin_menu()
+    )
 
 
 async def main():

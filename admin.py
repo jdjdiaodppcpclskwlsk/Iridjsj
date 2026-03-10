@@ -14,6 +14,8 @@ class MailingStates(StatesGroup):
 def get_admin_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="📨 Рассылка", callback_data="admin_mailing")
+    builder.button(text="📊 Статистика", callback_data="admin_stats")
+    builder.button(text="📬 Заявки", callback_data="offers_menu")
     builder.adjust(1)
     return builder.as_markup()
 
