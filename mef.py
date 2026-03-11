@@ -887,7 +887,7 @@ async def trade_platform(callback: CallbackQuery):
     kb = get_trades_keyboard(0)
     tr = get_active_trades()
     if not tr:
-        await callback.message.edit_text("Нет активных предложений", reply_markup=kb)
+        await callback.message.edit_text("Нет предложений", reply_markup=kb)
     else:
         await callback.message.edit_text("Все предложения:", reply_markup=kb)
 
@@ -903,12 +903,12 @@ async def view_trade(callback: CallbackQuery):
     tid = int(callback.data.split(":")[1])
     tr = get_trade_by_id(tid)
     if not tr:
-        await callback.answer("Предложение не найдено", show_alert=True)
+        await callback.answer("Предложение нема", show_alert=True)
         return
     text = (f"Ник: {tr['first_name']}\nЮзер: @{tr['username'] if tr['username'] else 'нет'}\n"
             f"Айди: {tr['user_id']}\n\nТрейдит:\n{tr['offer']}\n\nИщет:\n{tr['want']}")
     b = InlineKeyboardBuilder()
-    b.button(text="Назад", callback_data="trade_platform")
+    b.button(text="◀️ Назад", callback_data="trade_platform")
     await callback.message.edit_text(text, reply_markup=b.as_markup())
 
 @dp.callback_query(F.data == "create_trade")
@@ -961,36 +961,9 @@ async def submit_trade(callback: CallbackQuery, state: FSMContext):
     user = callback.from_user
     create_trade(user.id, user.username, user.first_name, data['title'], data['offer'], data['want'])
     await state.clear()
-    await callback.message.edit_text("Предложение создано!")
+    await callback.message.edit_text("Предложение сделано")
     await asyncio.sleep(1)
     await callback.message.edit_text("Трейд:", reply_markup=get_trade_menu())
-
-@dp.callback_query(F.data == "search_trade")
-async def search_trade_start(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    b = InlineKeyboardBuilder()
-    b.button(text="Отмена", callback_data="cancel_trade")
-    await callback.message.edit_text("Введи ключевое слово для поиска (что ищут):", reply_markup=b.as_markup())
-    await state.set_state(TradeStates.WAITING_SEARCH)
-
-@dp.message(TradeStates.WAITING_SEARCH)
-async def process_trade_search(message: Message, state: FSMContext):
-    query = message.text
-    tr = search_trades_by_want(query)
-    await state.clear()
-    if not tr:
-        await message.answer("Ничего не найдено")
-        await asyncio.sleep(1)
-        await message.answer("Трейд:", reply_markup=get_trade_menu())
-        await message.delete()
-        return
-    b = InlineKeyboardBuilder()
-    for t in tr:
-        b.button(text=t['title'], callback_data=f"view_trade:{t['trade_id']}")
-    b.button(text="Назад", callback_data="trade_menu")
-    b.adjust(1)
-    await message.answer(f"Найдено предложений: {len(tr)}", reply_markup=b.as_markup())
-    await message.delete()
 
 @dp.callback_query(F.data == "my_trades")
 async def my_trades(callback: CallbackQuery):
@@ -999,7 +972,7 @@ async def my_trades(callback: CallbackQuery):
     kb = get_user_trades_keyboard(uid)
     tr = get_user_trades(uid)
     if not tr:
-        await callback.message.edit_text("У тебя нет активных предложений", reply_markup=kb)
+        await callback.message.edit_text("У тебя нет предложений", reply_markup=kb)
     else:
         await callback.message.edit_text("Твои предложения:", reply_markup=kb)
 
@@ -1009,12 +982,12 @@ async def my_trade_detail(callback: CallbackQuery):
     tid = int(callback.data.split(":")[1])
     tr = get_trade_by_id(tid)
     if not tr:
-        await callback.answer("Предложение не найдено", show_alert=True)
+        await callback.answer("Предложение нема", show_alert=True)
         return
     text = f"Название: {tr['title']}\n\nТрейдит:\n{tr['offer']}\n\nИщет:\n{tr['want']}"
     b = InlineKeyboardBuilder()
     b.button(text="Удалить предложение", callback_data=f"delete_trade:{tid}")
-    b.button(text="Назад", callback_data="my_trades")
+    b.button(text="◀️ Назад", callback_data="my_trades")
     b.adjust(1)
     await callback.message.edit_text(text, reply_markup=b.as_markup())
 
@@ -1024,7 +997,7 @@ async def delete_trade_handler(callback: CallbackQuery):
     tid = int(callback.data.split(":")[1])
     tr = get_trade_by_id(tid)
     if not tr:
-        await callback.answer("Предложение не найдено", show_alert=True)
+        await callback.answer("Предложение нема", show_alert=True)
         return
     if tr['user_id'] != callback.from_user.id and callback.from_user.id != CREATOR_ID:
         await callback.answer("Это не твое предложение", show_alert=True)

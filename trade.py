@@ -8,7 +8,6 @@ class TradeStates(StatesGroup):
     WAITING_TITLE = State()
     WAITING_OFFER = State()
     WAITING_WANT = State()
-    WAITING_SEARCH = State()
 
 class TradeStatus:
     ACTIVE = "active"
@@ -80,16 +79,6 @@ def delete_trade(trade_id: int) -> None:
         """, (TradeStatus.DELETED, trade_id))
         conn.commit()
 
-def search_trades_by_want(query: str) -> List[Dict[str, Any]]:
-    with sqlite3.connect("trade.db") as conn:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.execute("""
-            SELECT * FROM trades 
-            WHERE status = ? AND LOWER(want) LIKE ?
-            ORDER BY created_at DESC
-        """, (TradeStatus.ACTIVE, f"%{query.lower()}%"))
-        return [dict(row) for row in cursor.fetchall()]
-
 def get_trades_keyboard(page: int = 0, items_per_page: int = 7) -> InlineKeyboardMarkup:
     trades = get_active_trades()
     
@@ -154,12 +143,6 @@ def get_trade_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="🏪 Площадка", callback_data="trade_platform")
     builder.button(text="➕ Выставить Предложение", callback_data="create_trade")
-    builder.button(text="🔍 Найти предложение", callback_data="search_trade")
     builder.button(text="◀️ Назад", callback_data="back_to_trade_main")
     builder.adjust(1)
-    return builder.as_markup()
-
-def get_back_keyboard(callback_data: str) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="◀️ Назад", callback_data=callback_data)
     return builder.as_markup()
