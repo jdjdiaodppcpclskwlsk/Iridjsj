@@ -37,7 +37,7 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-# Исправленные middleware классы
+# Middleware классы
 class TrackUsersMiddleware(BaseMiddleware):
     async def __call__(
         self,

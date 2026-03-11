@@ -2,12 +2,13 @@ import sqlite3
 from typing import List, Dict, Any, Optional
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.fsm.state import State, StatesGroup
 
-class TradeStates:
-    WAITING_TITLE = "waiting_title"
-    WAITING_OFFER = "waiting_offer"
-    WAITING_WANT = "waiting_want"
-    WAITING_SEARCH = "waiting_search"
+class TradeStates(StatesGroup):
+    WAITING_TITLE = State()
+    WAITING_OFFER = State()
+    WAITING_WANT = State()
+    WAITING_SEARCH = State()
 
 class TradeStatus:
     ACTIVE = "active"
@@ -33,78 +34,110 @@ def init_trades_db():
 def create_trade(user_id: int, username: str, first_name: str, 
                  title: str, offer: str, want: str) -> int:
     with sqlite3.connect("trade.db") as conn:
-        cur = conn.execute("""
+        cursor = conn.execute("""
             INSERT INTO trades (user_id, username, first_name, title, offer, want, status)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             RETURNING trade_id
         """, (user_id, username, first_name, title, offer, want, TradeStatus.ACTIVE))
-        tid = cur.fetchone()[0]
+        trade_id = cursor.fetchone()[0]
         conn.commit()
-        return tid
+        return trade_id
 
 def get_active_trades() -> List[Dict[str, Any]]:
     with sqlite3.connect("trade.db") as conn:
         conn.row_factory = sqlite3.Row
-        cur = conn.execute("SELECT * FROM trades WHERE status = ? ORDER BY created_at DESC", (TradeStatus.ACTIVE,))
-        return [dict(row) for row in cur.fetchall()]
+        cursor = conn.execute("""
+            SELECT * FROM trades 
+            WHERE status = ? 
+            ORDER BY created_at DESC
+        """, (TradeStatus.ACTIVE,))
+        return [dict(row) for row in cursor.fetchall()]
 
 def get_user_trades(user_id: int) -> List[Dict[str, Any]]:
     with sqlite3.connect("trade.db") as conn:
         conn.row_factory = sqlite3.Row
-        cur = conn.execute("SELECT * FROM trades WHERE user_id = ? AND status = ? ORDER BY created_at DESC",
-                          (user_id, TradeStatus.ACTIVE))
-        return [dict(row) for row in cur.fetchall()]
+        cursor = conn.execute("""
+            SELECT * FROM trades 
+            WHERE user_id = ? AND status = ?
+            ORDER BY created_at DESC
+        """, (user_id, TradeStatus.ACTIVE))
+        return [dict(row) for row in cursor.fetchall()]
 
 def get_trade_by_id(trade_id: int) -> Optional[Dict[str, Any]]:
     with sqlite3.connect("trade.db") as conn:
         conn.row_factory = sqlite3.Row
-        cur = conn.execute("SELECT * FROM trades WHERE trade_id = ?", (trade_id,))
-        row = cur.fetchone()
+        cursor = conn.execute("""
+            SELECT * FROM trades 
+            WHERE trade_id = ?
+        """, (trade_id,))
+        row = cursor.fetchone()
         return dict(row) if row else None
 
 def delete_trade(trade_id: int) -> None:
     with sqlite3.connect("trade.db") as conn:
-        conn.execute("UPDATE trades SET status = ? WHERE trade_id = ?", (TradeStatus.DELETED, trade_id))
+        conn.execute("""
+            UPDATE trades SET status = ? WHERE trade_id = ?
+        """, (TradeStatus.DELETED, trade_id))
         conn.commit()
 
 def search_trades_by_want(query: str) -> List[Dict[str, Any]]:
     with sqlite3.connect("trade.db") as conn:
         conn.row_factory = sqlite3.Row
-        cur = conn.execute("SELECT * FROM trades WHERE status = ? AND LOWER(want) LIKE ? ORDER BY created_at DESC",
-                          (TradeStatus.ACTIVE, f"%{query.lower()}%"))
-        return [dict(row) for row in cur.fetchall()]
+        cursor = conn.execute("""
+            SELECT * FROM trades 
+            WHERE status = ? AND LOWER(want) LIKE ?
+            ORDER BY created_at DESC
+        """, (TradeStatus.ACTIVE, f"%{query.lower()}%"))
+        return [dict(row) for row in cursor.fetchall()]
 
-def get_trades_keyboard(page: int = 0, per_page: int = 7) -> InlineKeyboardMarkup:
+def get_trades_keyboard(page: int = 0, items_per_page: int = 7) -> InlineKeyboardMarkup:
     trades = get_active_trades()
+    
     if not trades:
         builder = InlineKeyboardBuilder()
         builder.button(text="Назад", callback_data="back_to_trade_main")
         return builder.as_markup()
-    start = page * per_page
-    end = start + per_page
+    
+    start = page * items_per_page
+    end = start + items_per_page
     page_trades = trades[start:end]
+    
     builder = InlineKeyboardBuilder()
-    for t in page_trades:
-        builder.button(text=t['title'][:20], callback_data=f"view_trade:{t['trade_id']}")
-    nav = InlineKeyboardBuilder()
+    
+    for trade in page_trades:
+        builder.button(
+            text=trade['title'][:20],
+            callback_data=f"view_trade:{trade['trade_id']}"
+        )
+    
+    nav_builder = InlineKeyboardBuilder()
     if page > 0:
-        nav.button(text="⬅️", callback_data=f"trades_page:{page-1}")
+        nav_builder.button(text="⬅️", callback_data=f"trades_page:{page-1}")
     if end < len(trades):
-        nav.button(text="➡️", callback_data=f"trades_page:{page+1}")
-    if nav.buttons:
-        builder.attach(nav)
+        nav_builder.button(text="➡️", callback_data=f"trades_page:{page+1}")
+    
+    if nav_builder.buttons:
+        builder.attach(nav_builder)
+    
     builder.adjust(1)
     return builder.as_markup()
 
 def get_user_trades_keyboard(user_id: int) -> InlineKeyboardMarkup:
     trades = get_user_trades(user_id)
+    
     if not trades:
         builder = InlineKeyboardBuilder()
         builder.button(text="Назад", callback_data="back_to_trade_main")
         return builder.as_markup()
+    
     builder = InlineKeyboardBuilder()
-    for t in trades:
-        builder.button(text=t['title'], callback_data=f"my_trade:{t['trade_id']}")
+    
+    for trade in trades:
+        builder.button(
+            text=trade['title'],
+            callback_data=f"my_trade:{trade['trade_id']}"
+        )
+    
     builder.button(text="Назад", callback_data="back_to_trade_main")
     builder.adjust(1)
     return builder.as_markup()
