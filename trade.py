@@ -95,7 +95,7 @@ def get_trades_keyboard(page: int = 0, items_per_page: int = 7) -> InlineKeyboar
     
     if not trades:
         builder = InlineKeyboardBuilder()
-        builder.button(text="Назад", callback_data="back_to_trade_main")
+        builder.button(text="◀️ Назад", callback_data="back_to_trade_main")
         return builder.as_markup()
     
     start = page * items_per_page
@@ -106,13 +106,14 @@ def get_trades_keyboard(page: int = 0, items_per_page: int = 7) -> InlineKeyboar
     
     for trade in page_trades:
         builder.button(
-            text=trade['title'][:20],
+            text=trade['title'][:30],
             callback_data=f"view_trade:{trade['trade_id']}"
         )
     
     nav_builder = InlineKeyboardBuilder()
     if page > 0:
         nav_builder.button(text="⬅️", callback_data=f"trades_page:{page-1}")
+    nav_builder.button(text="🏠", callback_data="back_to_trade_main")
     if end < len(trades):
         nav_builder.button(text="➡️", callback_data=f"trades_page:{page+1}")
     
@@ -127,33 +128,38 @@ def get_user_trades_keyboard(user_id: int) -> InlineKeyboardMarkup:
     
     if not trades:
         builder = InlineKeyboardBuilder()
-        builder.button(text="Назад", callback_data="back_to_trade_main")
+        builder.button(text="◀️ Назад", callback_data="back_to_trade_main")
         return builder.as_markup()
     
     builder = InlineKeyboardBuilder()
     
     for trade in trades:
         builder.button(
-            text=trade['title'],
+            text=trade['title'][:30],
             callback_data=f"my_trade:{trade['trade_id']}"
         )
     
-    builder.button(text="Назад", callback_data="back_to_trade_main")
+    builder.button(text="◀️ Назад", callback_data="back_to_trade_main")
     builder.adjust(1)
     return builder.as_markup()
 
 def get_trade_main_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text="Трейд", callback_data="trade_menu")
-    builder.button(text="Мои предложения", callback_data="my_trades")
+    builder.button(text="🔄 Трейд", callback_data="trade_menu")
+    builder.button(text="📋 Мои предложения", callback_data="my_trades")
     builder.adjust(1)
     return builder.as_markup()
 
 def get_trade_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text="Площадка", callback_data="trade_platform")
-    builder.button(text="Выставить Предложение", callback_data="create_trade")
-    builder.button(text="Найти предложение", callback_data="search_trade")
-    builder.button(text="Назад", callback_data="back_to_trade_main")
+    builder.button(text="🏪 Площадка", callback_data="trade_platform")
+    builder.button(text="➕ Выставить Предложение", callback_data="create_trade")
+    builder.button(text="🔍 Найти предложение", callback_data="search_trade")
+    builder.button(text="◀️ Назад", callback_data="back_to_trade_main")
     builder.adjust(1)
+    return builder.as_markup()
+
+def get_back_keyboard(callback_data: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="◀️ Назад", callback_data=callback_data)
     return builder.as_markup()
