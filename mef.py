@@ -26,10 +26,9 @@ from offer import (
 )
 from trade import (
     TradeStates, TradeStatus, init_trades_db, create_trade, get_active_trades,
-    get_user_trades, get_trade_by_id, delete_trade, search_trades_by_want,
+    get_user_trades, get_trade_by_id, delete_trade,
     get_trades_keyboard, get_user_trades_keyboard, get_trade_main_menu, get_trade_menu
 )
-
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 CREATOR_ID = 7306010609
 
