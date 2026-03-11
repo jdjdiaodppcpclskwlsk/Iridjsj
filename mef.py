@@ -7,6 +7,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram import BaseMiddleware
+from typing import Dict, Any, Callable, Awaitable
 
 import database
 import codes
@@ -35,25 +37,40 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
+# Исправленные middleware классы
+class TrackUsersMiddleware(BaseMiddleware):
+    async def __call__(
+        self,
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
+        event: Message,
+        data: Dict[str, Any]
+    ) -> Any:
+        if event.from_user:
+            database.add_user(event.from_user.id, event.from_user.first_name, event.from_user.username)
+        return await handler(event, data)
+
+class CheckVerificationMiddleware(BaseMiddleware):
+    async def __call__(
+        self,
+        handler: Callable[[CallbackQuery, Dict[str, Any]], Awaitable[Any]],
+        event: CallbackQuery,
+        data: Dict[str, Any]
+    ) -> Any:
+        if not database.check_chat_verified(event.message.chat.id):
+            await event.answer("Чат не верифицирован", show_alert=True)
+            return
+        return await handler(event, data)
+
+# Регистрация middleware
+dp.message.middleware(TrackUsersMiddleware())
+dp.callback_query.middleware(CheckVerificationMiddleware())
+
 def init_all_dbs():
     database.init_users_db()
     database.init_chats_db()
     database.init_sessions_db()
     init_offers_db()
     init_trades_db()
-
-@dp.message.middleware()
-async def track_users(handler, event: Message, data: dict):
-    if event.from_user:
-        database.add_user(event.from_user.id, event.from_user.first_name, event.from_user.username)
-    return await handler(event, data)
-
-@dp.callback_query.middleware()
-async def check_verification(handler, event: CallbackQuery, data: dict):
-    if not database.check_chat_verified(event.message.chat.id):
-        await event.answer("Чат не верифицирован", show_alert=True)
-        return
-    return await handler(event, data)
 
 @dp.message(Command("AotrOn"))
 async def cmd_verification_on(message: Message):
