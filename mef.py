@@ -725,7 +725,6 @@ async def process_mailing_text(message: Message, state: FSMContext):
     await status.edit_text(f"Рассылка завершена!\nОтправлено: {sent}\nНе удалось: {failed}")
     await state.clear()
 
-# ИСПРАВЛЕННАЯ ФУНКЦИЯ - добавлен parse_mode=None
 @dp.callback_query(F.data == "admin_stats")
 async def admin_stats(callback: CallbackQuery):
     if callback.from_user.id != CREATOR_ID:
@@ -735,7 +734,7 @@ async def admin_stats(callback: CallbackQuery):
     users = database.get_all_users()
     chats = database.get_all_verified_chats()
     text = f"Статистика:\n\nПользователей: {len(users)}\nЧатов: {len(chats)}"
-    await callback.message.edit_text(text, reply_markup=get_admin_menu(), parse_mode=None)
+    await callback.message.edit_text(text, reply_markup=get_admin_menu())
 
 @dp.callback_query(F.data == "offers_menu")
 async def offers_menu(callback: CallbackQuery):
