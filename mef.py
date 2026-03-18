@@ -1,4 +1,6 @@
 import asyncio
+import json
+import aiofiles
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -16,7 +18,7 @@ import families
 import guide
 import memories
 import perks
-import config
+import build
 from admin import MailingStates, get_admin_menu, send_mailing
 from offer import (
     OfferStates, OfferStatus, init_offers_db, create_offer, get_user_offers,
@@ -29,6 +31,7 @@ from trade import (
     get_user_trades, get_trade_by_id, delete_trade,
     get_trades_keyboard, get_user_trades_keyboard, get_trade_main_menu, get_trade_menu
 )
+
 BOT_TOKEN = "8377727368:AAHUmJu_dUSJ-ZmwDWHP4mNdtvQNP39kRZM"
 CREATOR_ID = 7306010609
 
@@ -36,7 +39,13 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-# Middleware классы
+async def load_guide():
+    try:
+        async with aiofiles.open("guide.json", "r", encoding="utf-8") as f:
+            return json.loads(await f.read())
+    except:
+        return {}
+
 class TrackUsersMiddleware(BaseMiddleware):
     async def __call__(
         self,
@@ -60,7 +69,6 @@ class CheckVerificationMiddleware(BaseMiddleware):
             return
         return await handler(event, data)
 
-# Регистрация middleware
 dp.message.middleware(TrackUsersMiddleware())
 dp.callback_query.middleware(CheckVerificationMiddleware())
 
@@ -70,6 +78,8 @@ def init_all_dbs():
     database.init_sessions_db()
     init_offers_db()
     init_trades_db()
+    build.init_builds_db()
+    guide.init_guide_db()
 
 @dp.message(Command("AotrOn"))
 async def cmd_verification_on(message: Message):
@@ -215,7 +225,7 @@ async def cmd_guide(message: Message):
         await message.answer("Бот не верифицирован в этом чате.")
         return
     uid = message.from_user.id
-    msg = await message.answer("🎮 Выбирай:", reply_markup=guide.get_main_menu())
+    msg = await message.answer("Гайды:", reply_markup=guide.get_main_menu())
     database.save_session(uid, "guide", msg.message_id)
     await message.delete()
 
@@ -230,27 +240,14 @@ async def menu_farm(callback: CallbackQuery):
     except:
         pass
 
-@dp.callback_query(F.data == "menu_builds")
-async def menu_builds(callback: CallbackQuery):
-    await callback.answer()
-    uid, mid = callback.from_user.id, callback.message.message_id
-    if not database.check_session_access(uid, mid, "guide"):
-        return
-    try:
-        await callback.message.edit_text("⚡ Билды:", reply_markup=guide.get_builds_menu())
-    except:
-        pass
-
 @dp.callback_query(F.data == "prestige")
 async def menu_prestige(callback: CallbackQuery):
     await callback.answer()
     uid, mid = callback.from_user.id, callback.message.message_id
     if not database.check_session_access(uid, mid, "guide"):
         return
-    cfg = await config.load_config()
-    text = cfg.get("prestige", {}).get("text", "Информация о престиже")
-    if not text or text.strip() == "":
-        text = "нихуя нема"
+    guide_data = await load_guide()
+    text = guide_data.get("prestige", {}).get("text", "Информация о престиже")
     b = InlineKeyboardBuilder()
     b.button(text="◀️ Назад", callback_data="back_main")
     try:
@@ -264,10 +261,8 @@ async def farm_gold(callback: CallbackQuery):
     uid, mid = callback.from_user.id, callback.message.message_id
     if not database.check_session_access(uid, mid, "guide"):
         return
-    cfg = await config.load_config()
-    text = cfg.get("farm", {}).get("gold", "Информация о фарме золота")
-    if not text or text.strip() == "":
-        text = "нихуя нема"
+    guide_data = await load_guide()
+    text = guide_data.get("farm", {}).get("gold", "Информация о фарме золота")
     b = InlineKeyboardBuilder()
     b.button(text="◀️ Назад", callback_data="menu_farm")
     try:
@@ -281,10 +276,8 @@ async def farm_titans(callback: CallbackQuery):
     uid, mid = callback.from_user.id, callback.message.message_id
     if not database.check_session_access(uid, mid, "guide"):
         return
-    cfg = await config.load_config()
-    text = cfg.get("farm", {}).get("titans", "Информация о фарме титанов")
-    if not text or text.strip() == "":
-        text = "нихуя нема"
+    guide_data = await load_guide()
+    text = guide_data.get("farm", {}).get("titans", "Информация о фарме титанов")
     b = InlineKeyboardBuilder()
     b.button(text="◀️ Назад", callback_data="menu_farm")
     try:
@@ -298,75 +291,10 @@ async def farm_raids(callback: CallbackQuery):
     uid, mid = callback.from_user.id, callback.message.message_id
     if not database.check_session_access(uid, mid, "guide"):
         return
-    cfg = await config.load_config()
-    text = cfg.get("farm", {}).get("raids", "Информация о рейдах")
-    if not text or text.strip() == "":
-        text = "нихуя нема"
+    guide_data = await load_guide()
+    text = guide_data.get("farm", {}).get("raids", "Информация о рейдах")
     b = InlineKeyboardBuilder()
     b.button(text="◀️ Назад", callback_data="menu_farm")
-    try:
-        await callback.message.edit_text(text, reply_markup=b.as_markup())
-    except:
-        pass
-
-@dp.callback_query(F.data == "build_fritz")
-async def build_fritz(callback: CallbackQuery):
-    await callback.answer()
-    uid, mid = callback.from_user.id, callback.message.message_id
-    if not database.check_session_access(uid, mid, "guide"):
-        return
-    try:
-        await callback.message.edit_text("👑 Билды Fritz:", reply_markup=guide.get_fritz_menu())
-    except:
-        pass
-
-@dp.callback_query(F.data == "build_helos")
-async def build_helos(callback: CallbackQuery):
-    await callback.answer()
-    uid, mid = callback.from_user.id, callback.message.message_id
-    if not database.check_session_access(uid, mid, "guide"):
-        return
-    try:
-        await callback.message.edit_text("⚡ Билды Helos:", reply_markup=guide.get_helos_menu())
-    except:
-        pass
-
-@dp.callback_query(F.data == "build_ackerman")
-async def build_ackerman(callback: CallbackQuery):
-    await callback.answer()
-    uid, mid = callback.from_user.id, callback.message.message_id
-    if not database.check_session_access(uid, mid, "guide"):
-        return
-    try:
-        await callback.message.edit_text("🗡️ Билды Ackerman:", reply_markup=guide.get_ackerman_menu())
-    except:
-        pass
-
-@dp.callback_query(F.data == "build_leonhart")
-async def build_leonhart(callback: CallbackQuery):
-    await callback.answer()
-    uid, mid = callback.from_user.id, callback.message.message_id
-    if not database.check_session_access(uid, mid, "guide"):
-        return
-    try:
-        await callback.message.edit_text("🎭 Билды Leonhart:", reply_markup=guide.get_leonhart_menu())
-    except:
-        pass
-
-@dp.callback_query(F.data.startswith(("fritz_", "helos_", "ackerman_", "leonhart_")))
-async def handle_builds(callback: CallbackQuery):
-    await callback.answer()
-    uid, mid = callback.from_user.id, callback.message.message_id
-    if not database.check_session_access(uid, mid, "guide"):
-        return
-    bt = callback.data
-    char = bt.split("_")[0]
-    cfg = await config.load_config()
-    text = cfg.get("builds", {}).get(char, {}).get(bt, "Информация о билде")
-    if not text or text.strip() == "":
-        text = "нихуя нема"
-    b = InlineKeyboardBuilder()
-    b.button(text="◀️ Назад", callback_data=f"build_{char}")
     try:
         await callback.message.edit_text(text, reply_markup=b.as_markup())
     except:
@@ -379,7 +307,7 @@ async def back_main(callback: CallbackQuery):
     if not database.check_session_access(uid, mid, "guide"):
         return
     try:
-        await callback.message.edit_text("🎮 Выбирай:", reply_markup=guide.get_main_menu())
+        await callback.message.edit_text("Гайды:", reply_markup=guide.get_main_menu())
     except:
         pass
 
@@ -1005,6 +933,57 @@ async def delete_trade_handler(callback: CallbackQuery):
     await callback.message.edit_text("Предложение удалено")
     await asyncio.sleep(1)
     await callback.message.edit_text("Твои предложения:", reply_markup=get_user_trades_keyboard(callback.from_user.id))
+
+@dp.message(Command("build"))
+async def cmd_build(message: Message):
+    if not database.check_chat_verified(message.chat.id):
+        await message.answer("Бот не верифицирован в этом чате.")
+        return
+    uid = message.from_user.id
+    msg = await message.answer("Билды:", reply_markup=build.get_main_menu())
+    database.save_session(uid, "build", msg.message_id)
+    await message.delete()
+
+@dp.callback_query(F.data.startswith("build_family:"))
+async def build_family(callback: CallbackQuery):
+    await callback.answer()
+    uid, mid = callback.from_user.id, callback.message.message_id
+    if not database.check_session_access(uid, mid, "build"):
+        return
+    family = callback.data.split(":", 1)[1]
+    builds_data = await build.load_builds()
+    kb = build.get_family_menu(family, builds_data)
+    emoji = build.FAMILY_EMOJI.get(family, "•")
+    await callback.message.edit_text(f"{emoji} {family}:", reply_markup=kb)
+
+@dp.callback_query(F.data.startswith("build_view:"))
+async def build_view(callback: CallbackQuery):
+    await callback.answer()
+    uid, mid = callback.from_user.id, callback.message.message_id
+    if not database.check_session_access(uid, mid, "build"):
+        return
+    parts = callback.data.split(":")
+    if len(parts) == 4:
+        _, family, category, build_key = parts
+    else:
+        _, family, category = parts
+        build_key = category
+    builds_data = await build.load_builds()
+    if len(parts) == 4:
+        text = builds_data.get("builds", {}).get(family, {}).get(category, {}).get(build_key, "")
+    else:
+        text = builds_data.get("builds", {}).get(family, {}).get(category, {}).get(f"{family.lower()}_{category.lower()}", "")
+    b = InlineKeyboardBuilder()
+    b.button(text="◀️ Назад", callback_data=f"build_family:{family}")
+    await callback.message.edit_text(text, reply_markup=b.as_markup())
+
+@dp.callback_query(F.data == "back_to_builds_main")
+async def back_to_builds_main(callback: CallbackQuery):
+    await callback.answer()
+    uid, mid = callback.from_user.id, callback.message.message_id
+    if not database.check_session_access(uid, mid, "build"):
+        return
+    await callback.message.edit_text("Билды:", reply_markup=build.get_main_menu())
 
 async def main():
     init_all_dbs()
