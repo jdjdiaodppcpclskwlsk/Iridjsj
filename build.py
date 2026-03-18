@@ -33,6 +33,18 @@ TITAN_EMOJI = {
     "ЖЕНСКИЙ": "💃"
 }
 
+DISPLAY_NAMES = {
+    "ОДМ": "⚔️ ОДМ",
+    "КОПЬЯ": "⚡ Громовые Копья",
+    "БАФФЕР": "📈 Баффер",
+    "ТИТАНЫ": "👹 Титаны",
+    "АТАКУЮЩИЙ": "👊 Атакующий",
+    "БРОНИРОВАННЫЙ": "🛡️ Бронированный",
+    "ЖЕНСКИЙ": "💃 Женский",
+    "КАРТОШКА": "🥔 Картошка",
+    "ТАНК": "🚜 Танк"
+}
+
 def init_builds_db():
     with sqlite3.connect("builds.db") as conn:
         conn.execute("""
@@ -63,17 +75,34 @@ def get_main_menu() -> InlineKeyboardMarkup:
 def get_family_menu(family: str, builds_data: Dict) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     family_builds = builds_data.get("builds", {}).get(family, {})
+    
     for category, subcats in family_builds.items():
-        cat_emoji = CATEGORY_EMOJI.get(category, "•")
         if category == "ТИТАНЫ" and isinstance(subcats, dict):
             for titan_type in subcats.keys():
-                titan_emoji = TITAN_EMOJI.get(titan_type, "👹")
-                builder.button(text=f"{titan_emoji} {titan_type}", callback_data=f"build_view:{family}:{category}:{titan_type}")
+                display = DISPLAY_NAMES.get(titan_type, titan_type)
+                builder.button(text=display, callback_data=f"build_view:{family}:{category}:{titan_type}")
         elif isinstance(subcats, dict):
             for subcat in subcats.keys():
-                builder.button(text=f"{cat_emoji} {subcat}", callback_data=f"build_view:{family}:{category}:{subcat}")
+                display = DISPLAY_NAMES.get(category, category)
+                builder.button(text=display, callback_data=f"build_view:{family}:{category}:{subcat}")
+            break
         else:
-            builder.button(text=f"{cat_emoji} {category}", callback_data=f"build_view:{family}:{category}")
+            display = DISPLAY_NAMES.get(category, category)
+            builder.button(text=display, callback_data=f"build_view:{family}:{category}")
+    
     builder.button(text="◀️ Назад", callback_data="back_to_builds_main")
     builder.adjust(1)
     return builder.as_markup()
+
+def save_user_favorite(user_id: int, build_name: str):
+    with sqlite3.connect("builds.db") as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO user_builds (user_id, favorite_build, last_viewed)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+        """, (user_id, build_name))
+        conn.commit()
+
+def get_user_favorite(user_id: int) -> Optional[str]:
+    with sqlite3.connect("builds.db") as conn:
+        result = conn.execute("SELECT favorite_build FROM user_builds WHERE user_id = ?", (user_id,)).fetchone()
+        return result[0] if result else None
