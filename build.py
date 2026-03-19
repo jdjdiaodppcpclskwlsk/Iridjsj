@@ -1,11 +1,9 @@
 import json
 import aiofiles
 import sqlite3
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-BUILDS_PER_PAGE = 5
 
 FAMILY_EMOJI = {
     "HELOS": "⚡",
@@ -18,31 +16,37 @@ FAMILY_EMOJI = {
     "BRAUS": "🛡️"
 }
 
-CATEGORY_EMOJI = {
-    "ТИТАНЫ": "👹",
-    "ОДМ": "🛡️",
-    "КОПЬЯ": "⚡",
-    "БАФФЕР": "📈",
-    "КАРТОШКА": "🥔",
-    "ТАНК": "🚜"
-}
-
-TITAN_EMOJI = {
-    "АТАКУЮЩИЙ": "👊",
-    "БРОНИРОВАННЫЙ": "🛡️",
-    "ЖЕНСКИЙ": "💃"
-}
-
 DISPLAY_NAMES = {
-    "ОДМ": "⚔️ ОДМ",
-    "КОПЬЯ": "⚡ Громовые Копья",
-    "БАФФЕР": "📈 Баффер",
-    "ТИТАНЫ": "👹 Титаны",
-    "АТАКУЮЩИЙ": "👊 Атакующий",
-    "БРОНИРОВАННЫЙ": "🛡️ Бронированный",
-    "ЖЕНСКИЙ": "💃 Женский",
-    "КАРТОШКА": "🥔 Картошка",
-    "ТАНК": "🚜 Танк"
+    "helos_odm": "🛡️ ОДМ",
+    "helos_spears": "⚡ Громовые Копья",
+    "helos_buffer": "📈 Баффер",
+    "fritz_odm": "🛡️ ОДМ",
+    "fritz_attack": "👊 Атакующий Титан",
+    "fritz_female": "💃 Женский Титан",
+    "fritz_spears": "⚡ Громовые Копья",
+    "fritz_buffer": "📈 Баффер",
+    "yeager_attack": "👊 Атакующий Титан",
+    "yeager_armored": "🛡️ Бронированный Титан",
+    "yeager_female": "💃 Женский Титан",
+    "yeager_odm": "🛡️ ОДМ",
+    "yeager_spears": "⚡ Громовые Копья",
+    "ackerman_odm": "🛡️ ОДМ",
+    "ackerman_spears": "⚡ Громовые Копья",
+    "reiss_attack": "👊 Атакующий Титан",
+    "reiss_armored": "🛡️ Бронированный Титан",
+    "reiss_female": "💃 Женский Титан",
+    "reiss_odm": "🛡️ ОДМ",
+    "reiss_spears": "⚡ Громовые Копья",
+    "reiss_buffer": "📈 Баффер",
+    "leonhart_attack": "👊 Атакующий Титан",
+    "leonhart_female": "💃 Женский Титан",
+    "leonhart_odm": "🛡️ ОДМ",
+    "leonhart_spears": "⚡ Громовые Копья",
+    "leonhart_buffer": "📈 Баффер",
+    "zoe_odm": "🛡️ ОДМ",
+    "zoe_spears": "⚡ Громовые Копья",
+    "braus_potato": "🥔 Картошка",
+    "braus_tank": "🚜 Танк"
 }
 
 def init_builds_db():
@@ -50,7 +54,6 @@ def init_builds_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_builds (
                 user_id INTEGER PRIMARY KEY,
-                favorite_build TEXT,
                 last_viewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -76,33 +79,11 @@ def get_family_menu(family: str, builds_data: Dict) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     family_builds = builds_data.get("builds", {}).get(family, {})
     
-    for category, subcats in family_builds.items():
-        if category == "ТИТАНЫ" and isinstance(subcats, dict):
-            for titan_type in subcats.keys():
-                display = DISPLAY_NAMES.get(titan_type, titan_type)
-                builder.button(text=display, callback_data=f"build_view:{family}:{category}:{titan_type}")
-        elif isinstance(subcats, dict):
-            for subcat in subcats.keys():
-                display = DISPLAY_NAMES.get(category, category)
-                builder.button(text=display, callback_data=f"build_view:{family}:{category}:{subcat}")
-            break
-        else:
-            display = DISPLAY_NAMES.get(category, category)
-            builder.button(text=display, callback_data=f"build_view:{family}:{category}")
+    for build_key, build_text in family_builds.items():
+        if build_text:
+            display = DISPLAY_NAMES.get(build_key, build_key)
+            builder.button(text=display, callback_data=f"build_view:{family}:{build_key}")
     
     builder.button(text="◀️ Назад", callback_data="back_to_builds_main")
     builder.adjust(1)
     return builder.as_markup()
-
-def save_user_favorite(user_id: int, build_name: str):
-    with sqlite3.connect("builds.db") as conn:
-        conn.execute("""
-            INSERT OR REPLACE INTO user_builds (user_id, favorite_build, last_viewed)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-        """, (user_id, build_name))
-        conn.commit()
-
-def get_user_favorite(user_id: int) -> Optional[str]:
-    with sqlite3.connect("builds.db") as conn:
-        result = conn.execute("SELECT favorite_build FROM user_builds WHERE user_id = ?", (user_id,)).fetchone()
-        return result[0] if result else None

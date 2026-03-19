@@ -1,71 +1,50 @@
 {
   "builds": {
     "HELOS": {
-      "ОДМ": {
-        "helos_odm": "МЕТА БИЛД ОДМ (HELOS):\n\n<b>Древо навыков:</b>\n1. AVENGING EXECUTION (Мстительная казнь)\n2. ORDER: REVOLUTION (Приказ: Революция)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. KINGSLAYER (Убийца королей)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. KENGO\n3. UNPARALLELED STRENGTH\n4. IMMORTAL\n5. FONT OF INSPIRATION \n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. AFTERIMAGES (⭐⭐⭐⭐)\n3. QUAKESTRIKE (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE"
-      },
-      "КОПЬЯ": {
-        "helos_spears": "МЕТА БИЛД ГРОМОВЫЕ КОПЬЯ (HELOS):\n\n<b>Древо навыков:</b>\n1. AVENGING EXECUTION (Мстительная казнь)\n2. ORDER: REVOLUTION (Приказ: Революция)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. KINGSLAYER (Убийца королей)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. MAXIMUM FIREPOWER\n2. KENGO\n3. BLACK FLASH\n4. IMMORTAL\n5. FONT OF INSPIRATION \n6. EXPLOSIVE FORTUNE\n\n<b>Мемори Престижа:</b>\n1. AFTERIMAGES (⭐⭐⭐⭐)\n2. QUAKESTRIKE (⭐⭐⭐)\n3. MARKSMAN (⭐⭐⭐)\n4. ASSASSIN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  TS DAMAGE\n  TS DAMAGE\n• HOODIE (Капюшон):\n  TS DAMAGE\n  TS DAMAGE"
-      },
-      "БАФФЕР": {
-        "helos_buffer": "МЕТА БИЛД БАФФЕР ОДМ (HELOS):\n\n<b>Древо навыков:</b>\n1. AVENGING EXECUTION (Мстительная казнь)\n2. ORDER: REVOLUTION (Приказ: Революция)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. RED FLARE (Красная вспышка)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. KENGO\n3. UNPARALLELED STRENGTH\n4. IMMORTAL\n5. FONT OF INSPIRATION \n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. OVERSLASH (⭐⭐⭐⭐)\n2. TACTICIAN (⭐⭐⭐)\n3. OMNIRANGE (⭐⭐⭐)\n4. CRESCENDO (⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE"
-      }
+      "helos_odm": "МЕТА БИЛД ОДМ (HELOS):\n\n<b>Древо навыков:</b>\n1. AVENGING EXECUTION (Мстительная казнь)\n2. ORDER: REVOLUTION (Приказ: Революция)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. KINGSLAYER (Убийца королей)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. KENGO\n3. UNPARALLELED STRENGTH\n4. IMMORTAL\n5. FONT OF INSPIRATION \n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. AFTERIMAGES (⭐⭐⭐⭐)\n3. QUAKESTRIKE (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE",
+      "helos_spears": "МЕТА БИЛД ГРОМОВЫЕ КОПЬЯ (HELOS):\n\n<b>Древо навыков:</b>\n1. AVENGING EXECUTION (Мстительная казнь)\n2. ORDER: REVOLUTION (Приказ: Революция)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. KINGSLAYER (Убийца королей)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. MAXIMUM FIREPOWER\n2. KENGO\n3. BLACK FLASH\n4. IMMORTAL\n5. FONT OF INSPIRATION \n6. EXPLOSIVE FORTUNE\n\n<b>Мемори Престижа:</b>\n1. AFTERIMAGES (⭐⭐⭐⭐)\n2. QUAKESTRIKE (⭐⭐⭐)\n3. MARKSMAN (⭐⭐⭐)\n4. ASSASSIN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  TS DAMAGE\n  TS DAMAGE\n• HOODIE (Капюшон):\n  TS DAMAGE\n  TS DAMAGE",
+      "helos_buffer": "МЕТА БИЛД БАФФЕР ОДМ (HELOS):\n\n<b>Древо навыков:</b>\n1. AVENGING EXECUTION (Мстительная казнь)\n2. ORDER: REVOLUTION (Приказ: Революция)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. RED FLARE (Красная вспышка)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. KENGO\n3. UNPARALLELED STRENGTH\n4. IMMORTAL\n5. FONT OF INSPIRATION \n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. OVERSLASH (⭐⭐⭐⭐)\n2. TACTICIAN (⭐⭐⭐)\n3. OMNIRANGE (⭐⭐⭐)\n4. CRESCENDO (⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE"
     },
     "FRITZ": {
-      "ТИТАНЫ": {
-        "АТАКУЮЩИЙ": "МЕТА БИЛД АТАКУЮЩИЙ ТИТАН (FRITZ):\n\n<b>Древо навыков:</b>\n1. FOUNDER'S ORDER (Приказ основателя)\n2. CHAOS (Хаос)\n3. ORDER: RAGE (Приказ: Ярость)\n4. ACOUSTIC SHELLS\n5. SHIFTING (Сдвиг)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — левая сторона (сокращение урона)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. ART OF WAR\n3. ADAPTATION\n4. IMMORTAL\n5. FONT OF INSPIRATION\n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. APOTHEOSIS (⭐⭐⭐⭐)\n3. FURY FORGE (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARF (Шарф):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n• SCARS (Шрамы):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n\n<b>Скиллы титана:</b>\n1. HARDEING (Укрепление)\n2. STOMP (Топот)\n3. ROAR (Крик)\n4. CORKSCREW PUNCH (Удар-штопор)\n5. BERSERK MODE (Режим берсерка)",
-        "БРОНИРОВАННЫЙ": "",
-        "ЖЕНСКИЙ": "МЕТА БИЛД ЖЕНСКИЙ ТИТАН (FRITZ):\n\n<b>Древо навыков:</b>\n1. FOUNDER'S ORDER (Приказ основателя)\n2. CHAOS (Хаос)\n3. ORDER: RAGE (Приказ: Ярость)\n4. ACOUSTIC SHELLS\n5. SHIFTING (Сдвиг)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — правая сторона (критический урон)\n- Дерево защиты — левая сторона (сокращение урона)\n\n<b>Перки:</b>\n1. ART OF WAR\n2. BLACK FLASH\n3. SOULFEED\n4. IMMORTAL\n5. ADAPTATION\n6. FONT OF INSPIRATION\n\n<b>Мемори Престижа:</b>\n1. APOTHEOSIS (⭐⭐⭐⭐)\n2. GAMBLER (⭐⭐⭐⭐)\n3. TACTICIAN (⭐⭐⭐)\n4. QUAKESTRIKE (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARF (Шарф):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n• SCARS (Шрамы):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n\n<b>Скиллы титана:</b>\n1. HARDENING (Укрепление)\n2. SHRIEK (Крик)\n3. GRAPPLE\n4. SIDE KICK\n5. EJECT\n6. MIMICRY (Подражать)\n\n<b>Важно:</b> За 5 шардов купите подражание Атакующего Титана!"
-      },
-      "ОДМ": {
-        "fritz_odm": "МЕТА БИЛД ОДМ (FRITZ):\n\n<b>Древо Навыков:</b>\n1. ORDER: RAGE (Приказ: Ярость)\n2. RED FLARE (Красная вспышка)\n3. BLACK FLARE (Черная вспышка)\n4. FOUNDER'S ORDER (Приказ основателя)\n5. CHAOS (Хаос)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. KENGO\n3. IMMORTAL\n4. PEERLESS CONSTITUTION\n5. FONT OF INSPIRATION\n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. QUAKESTRIKE (⭐⭐⭐)\n3. CRESCENDO (⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE"
-      },
-      "КОПЬЯ": {},
-      "БАФФЕР": {}
+      "fritz_odm": "МЕТА БИЛД ОДМ (FRITZ):\n\n<b>Древо Навыков:</b>\n1. ORDER: RAGE (Приказ: Ярость)\n2. RED FLARE (Красная вспышка)\n3. BLACK FLARE (Черная вспышка)\n4. FOUNDER'S ORDER (Приказ основателя)\n5. CHAOS (Хаос)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. KENGO\n3. IMMORTAL\n4. PEERLESS CONSTITUTION\n5. FONT OF INSPIRATION\n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. QUAKESTRIKE (⭐⭐⭐)\n3. CRESCENDO (⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE",
+      "fritz_attack": "МЕТА БИЛД АТАКУЮЩИЙ ТИТАН (FRITZ):\n\n<b>Древо навыков:</b>\n1. FOUNDER'S ORDER (Приказ основателя)\n2. CHAOS (Хаос)\n3. ORDER: RAGE (Приказ: Ярость)\n4. ACOUSTIC SHELLS\n5. SHIFTING (Сдвиг)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — левая сторона (сокращение урона)\n\n<b>Перки:</b>\n1. BLACK FLASH\n2. ART OF WAR\n3. ADAPTATION\n4. IMMORTAL\n5. FONT OF INSPIRATION\n6. COURAGE CATALYST\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. APOTHEOSIS (⭐⭐⭐⭐)\n3. FURY FORGE (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARF (Шарф):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n• SCARS (Шрамы):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n\n<b>Скиллы титана:</b>\n1. HARDEING (Укрепление)\n2. STOMP (Топот)\n3. ROAR (Крик)\n4. CORKSCREW PUNCH (Удар-штопор)\n5. BERSERK MODE (Режим берсерка)",
+      "fritz_female": "МЕТА БИЛД ЖЕНСКИЙ ТИТАН (FRITZ):\n\n<b>Древо навыков:</b>\n1. FOUNDER'S ORDER (Приказ основателя)\n2. CHAOS (Хаос)\n3. ORDER: RAGE (Приказ: Ярость)\n4. ACOUSTIC SHELLS\n5. SHIFTING (Сдвиг)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — правая сторона (критический урон)\n- Дерево защиты — левая сторона (сокращение урона)\n\n<b>Перки:</b>\n1. ART OF WAR\n2. BLACK FLASH\n3. SOULFEED\n4. IMMORTAL\n5. ADAPTATION\n6. FONT OF INSPIRATION\n\n<b>Мемори Престижа:</b>\n1. APOTHEOSIS (⭐⭐⭐⭐)\n2. GAMBLER (⭐⭐⭐⭐)\n3. TACTICIAN (⭐⭐⭐)\n4. QUAKESTRIKE (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARF (Шарф):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n• SCARS (Шрамы):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n\n<b>Скиллы титана:</b>\n1. HARDENING (Укрепление)\n2. SHRIEK (Крик)\n3. GRAPPLE\n4. SIDE KICK\n5. EJECT\n6. MIMICRY (Подражать)\n\n<b>Важно:</b> За 5 шардов купите подражание Атакующего Титана!",
+      "fritz_spears": "",
+      "fritz_buffer": ""
     },
     "YEAGER": {
-      "ТИТАНЫ": {
-        "АТАКУЮЩИЙ": "",
-        "БРОНИРОВАННЫЙ": "",
-        "ЖЕНСКИЙ": ""
-      },
-      "ОДМ": {},
-      "КОПЬЯ": {}
+      "yeager_attack": "",
+      "yeager_armored": "",
+      "yeager_female": "",
+      "yeager_odm": "",
+      "yeager_spears": ""
     },
     "ACKERMAN": {
-      "ОДМ": {
-        "ackerman_odm": "МЕТА БИЛД ОДМ (ACKERMAN):\n\n<b>Древо Навыков:</b>\n1. SWIFT STRIKES (Быстрые удары)\n2. LET IT RIP (Пусть рвется)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. RAGE MODE (Режим ярости)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. UNPARALLELED STRENGHT\n2. KENGO\n3. BLACK FLASH\n4. IMMORTAL\n5. FONT OF INSPIRATION\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. APOTHEOSIS (⭐⭐⭐⭐)\n3. QUAKESTRIKE (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE"
-      },
-      "КОПЬЯ": {
-        "ackerman_spears": "МЕТА БИЛД ГРОМОВЫЕ КОПЬЯ (ACKERMAN):\n\n<b>Древо навыков:</b>\n1. LIGHTNING BOLT (Удар молнии)\n2. HELLFIRE BARRAGE (Адский шквал)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. RED FLARE (Красная вспышка)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — правая сторона (критический урон)\n- Дерево защиты — правая сторона (Здоровье)\n\n<b>Перки:</b>\n1. MAXIMUM FIREPOWER\n2. KENGO\n3. BLACK FLASH\n4. IMMORTAL\n5. FONT OF INSPIRATION\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. AFTERIMAGES (⭐⭐⭐⭐)\n3. MARKSMAN (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  TS DAMAGE\n  TS DAMAGE\n• HOODIE (Капюшон):\n  TS DAMAGE\n  TS DAMAGE"
-      }
+      "ackerman_odm": "МЕТА БИЛД ОДМ (ACKERMAN):\n\n<b>Древо Навыков:</b>\n1. SWIFT STRIKES (Быстрые удары)\n2. LET IT RIP (Пусть рвется)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. RAGE MODE (Режим ярости)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — левая сторона (урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. UNPARALLELED STRENGHT\n2. KENGO\n3. BLACK FLASH\n4. IMMORTAL\n5. FONT OF INSPIRATION\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. APOTHEOSIS (⭐⭐⭐⭐)\n3. QUAKESTRIKE (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  ODM DAMAGE\n  ODM DAMAGE\n• HOODIE (Капюшон):\n  ODM DAMAGE\n  ODM DAMAGE",
+      "ackerman_spears": "МЕТА БИЛД ГРОМОВЫЕ КОПЬЯ (ACKERMAN):\n\n<b>Древо навыков:</b>\n1. LIGHTNING BOLT (Удар молнии)\n2. HELLFIRE BARRAGE (Адский шквал)\n3. BLACK FLARE (Черная вспышка)\n4. ORDER: RAGE (Приказ: Ярость)\n5. RED FLARE (Красная вспышка)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — правая сторона (критический урон)\n- Дерево защиты — правая сторона (Здоровье)\n\n<b>Перки:</b>\n1. MAXIMUM FIREPOWER\n2. KENGO\n3. BLACK FLASH\n4. IMMORTAL\n5. FONT OF INSPIRATION\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. AFTERIMAGES (⭐⭐⭐⭐)\n3. MARKSMAN (⭐⭐⭐)\n4. TACTICIAN (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  TS DAMAGE\n  TS DAMAGE\n• HOODIE (Капюшон):\n  TS DAMAGE\n  TS DAMAGE"
     },
     "REISS": {
-      "ТИТАНЫ": {
-        "АТАКУЮЩИЙ": "",
-        "БРОНИРОВАННЫЙ": "",
-        "ЖЕНСКИЙ": ""
-      },
-      "ОДМ": {},
-      "КОПЬЯ": {},
-      "БАФФЕР": {}
+      "reiss_attack": "",
+      "reiss_armored": "",
+      "reiss_female": "",
+      "reiss_odm": "",
+      "reiss_spears": "",
+      "reiss_buffer": ""
     },
     "LEONHART": {
-      "ТИТАНЫ": {
-        "АТАКУЮЩИЙ": "",
-        "ЖЕНСКИЙ": "МЕТА БИЛД ЖЕНСКИЙ ТИТАН (LEONHART):\n\n<b>Древо Навыков:</b>\n1. SHIFTING (Сдвиг)\n2. METEORIC RAIN (Метеоритный дождь)\n3. BLACK FLARE (Черная вспышка)\n4. FLASHBANG\n5. SHIFTER REGEN (Регенерация титана)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — правая сторона (критический урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. ART OF WAR\n2. ADAPTATION\n3. BLACK FLASH\n4. SOULFEED\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. APOTHEOSIS (⭐⭐⭐⭐)\n3. QUAKESTRIKE (⭐⭐⭐)\n4. FURY FORGE (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n• SCARF (Шарф):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n\n<b>Скиллы титана:</b>\n1. HARDEING (Укрепление)\n2. SHRIEK (Крик)\n3. GRAPPLE\n4. SIDE KICK\n5. EJECT"
-      },
-      "ОДМ": {},
-      "КОПЬЯ": {},
-      "БАФФЕР": {}
+      "leonhart_attack": "",
+      "leonhart_female": "МЕТА БИЛД ЖЕНСКИЙ ТИТАН (LEONHART):\n\n<b>Древо Навыков:</b>\n1. SHIFTING (Сдвиг)\n2. METEORIC RAIN (Метеоритный дождь)\n3. BLACK FLARE (Черная вспышка)\n4. FLASHBANG\n5. SHIFTER REGEN (Регенерация титана)\n\n<b>Развитие деревьев:</b>\n- Дерево поддержки — правая сторона (сокращение времени перезарядки)\n- Дерево атаки — правая сторона (критический урон)\n- Дерево защиты — правая сторона (здоровье)\n\n<b>Перки:</b>\n1. ART OF WAR\n2. ADAPTATION\n3. BLACK FLASH\n4. SOULFEED\n\n<b>Мемори Престижа:</b>\n1. GAMBLER (⭐⭐⭐⭐)\n2. APOTHEOSIS (⭐⭐⭐⭐)\n3. QUAKESTRIKE (⭐⭐⭐)\n4. FURY FORGE (⭐⭐⭐)\n\n<b>Артефакты:</b>\n• SCARS (Шрамы):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n• SCARF (Шарф):\n  SHIFTER DAMAGE\n  SHIFTER DAMAGE\n\n<b>Скиллы титана:</b>\n1. HARDEING (Укрепление)\n2. SHRIEK (Крик)\n3. GRAPPLE\n4. SIDE KICK\n5. EJECT",
+      "leonhart_odm": "",
+      "leonhart_spears": "",
+      "leonhart_buffer": ""
     },
     "ZOE": {
-      "ОДМ": {},
-      "КОПЬЯ": {}
+      "zoe_odm": "",
+      "zoe_spears": ""
     },
     "BRAUS": {
-      "КАРТОШКА": {},
-      "ТАНК": {}
+      "braus_potato": "",
+      "braus_tank": ""
     }
   }
 }
