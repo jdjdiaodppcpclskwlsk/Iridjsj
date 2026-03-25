@@ -17,7 +17,9 @@ import guide
 import memories
 import perks
 import config
+import game_database as gdb
 from admin import MailingStates, get_admin_menu, send_mailing
+from game import game_router
 from offer import (
     OfferStates, OfferStatus, init_offers_db, create_offer, get_user_offers,
     get_offers_by_status, get_offer_by_id, update_offer_status,
@@ -62,6 +64,7 @@ class CheckVerificationMiddleware(BaseMiddleware):
 
 dp.message.middleware(TrackUsersMiddleware())
 dp.callback_query.middleware(CheckVerificationMiddleware())
+dp.include_router(game_router)
 
 def init_all_dbs():
     database.init_users_db()
@@ -69,6 +72,7 @@ def init_all_dbs():
     database.init_sessions_db()
     init_offers_db()
     init_trades_db()
+    gdb.init_game_db()
 
 @dp.message(Command("AotrOn"))
 async def cmd_verification_on(message: Message):
