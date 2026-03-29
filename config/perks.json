@@ -1,0 +1,952 @@
+{
+  "perks": {
+    "Обычная": {
+      "main": [
+        {
+          "name": "ENHANCED METABOLISM",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Регенерация ХП увеличивается на 2-3%"
+            }
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "name": "MIGHTY",
+          "effects": [
+            {
+              "type": "good", 
+              "description": "Дамаг Копий/ОДМ увеличивается на 5-10%"
+            }
+          ]
+        },
+        {
+          "name": "CRIPPLE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Критический урон увеличивается на 5-10%"
+            }
+          ]
+        },
+        {
+          "name": "LUCKY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита повышается на 2.5%-5%"
+            }
+          ]
+        },
+        {
+          "name": "HOLLOW",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Длительность взмаха увеличивается на 2.5%-5%"
+            }
+          ]
+        }
+      ],
+      "defense": [
+        {
+          "name": "ENDURING",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Ты можешь проигнорировать 1-2 травмы за катку"
+            }
+          ]
+        },
+        {
+          "name": "FORTITUDE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "ХП увеличивается на 10-25 ед."
+            }
+          ]
+        }
+      ],
+      "support": [
+        {
+          "name": "GEAR BEGINNER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Контроль Копий/ОДМ увеличивается на 2.5%-5%"
+            }
+          ]
+        },
+        {
+          "name": "FIRST AID",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Ты получаешь на 1-2 бинта больше"
+            }
+          ]
+        }
+      ]
+    },
+    "Редкая": {
+      "main": [
+        {
+          "name": "CRITICAL HUNTER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Прочность клинка увеличивается на 7.5%-15%, а шанс не потратить прочность при использовании — на 3.75%-7.5%"
+            }
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "name": "FORCEFUL",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Дамаг Копий/ОДМ увеличивается на 7.5%-15%"
+            }
+          ]
+        },
+        {
+          "name": "MANGLE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Критический урон увеличивается на 10%-20%"
+            }
+          ]
+        },
+        {
+          "name": "BLESSED",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита повышается на 5%-10%"
+            }
+          ]
+        },
+        {
+          "name": "LIGHTWEIGHT",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Увеличивает длительность взмаха на 5–10%"
+            }
+          ]
+        }
+      ],
+      "defense": [
+        {
+          "name": "UNYIELDING",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Ты можешь проигнорировать 2-3 травмы за катку"
+            }
+          ]
+        },
+        {
+          "name": "HEIGHTENED VITALITY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Здоровье увеличивается на 25-50 ед."
+            }
+          ]
+        },
+        {
+          "name": "TOUGH",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Сопротивление урону увеличивается на 3.5–7.5%"
+            }
+          ]
+        },
+        {
+          "name": "PROTECTION",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Вероятность получения травмы от удара снижается на 5–10%"
+            }
+          ]
+        }
+      ],
+      "support": [
+        {
+          "name": "GEAR INTERMEDIATE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Управление ODM/Копий улучшается на 7.5–10%"
+            },
+            {
+              "type": "good",
+              "description": "Скорость ODM/Копий увеличивается на 5–7.5%"
+            }
+          ]
+        },
+        {
+          "name": "FULLY STOCKED",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Ты получаешь на 2-3 бинта больше"
+            }
+          ]
+        },
+        {
+          "name": "EXPERIMENTAL SHELLS",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Радиус действия твоих акустических снарядов и фаеров увеличен на 25–50%"
+            }
+          ]
+        }
+      ]
+    },
+    "Эпическая": {
+      "main": [
+        {
+          "name": "RESILIENT",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Позволяет превратиться в титана 1-2 раза подряд за катку"
+            },
+            {
+              "type": "good",
+              "description": "Шкала пробуждения заполняется на 5%-10% быстрее"
+            }
+          ]
+        },
+        {
+          "name": "SOLO",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Все статы Копий/ОДМ увеличиваются на 5%-7.5%"
+            }
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "name": "RECKLESS ABANDON",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Критический урон повышается на 20%-30%"
+            },
+            {
+              "type": "bad",
+              "description": "Шанс крита уменьшается на 10%-7.5%"
+            }
+          ]
+        },
+        {
+          "name": "FLAWED RELEASE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита увеличивается на 10%-20%"
+            },
+            {
+              "type": "bad",
+              "description": "Критический урон уменьшается на 30%-25%"
+            }
+          ]
+        },
+        {
+          "name": "FOCUS",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита увеличивается на 3%-5%"
+            },
+            {
+              "type": "good",
+              "description": "Критический урон повышается на 10%-15%"
+            }
+          ]
+        },
+        {
+          "name": "PEERLESS STRENGTH",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Дамаг Копий/ОДМ повышается на 10%-20%"
+            }
+          ]
+        },
+        {
+          "name": "MUTILATE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Критический урон повышается на 20%-35%"
+            }
+          ]
+        },
+        {
+          "name": "LUMINOUS",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита увеличивается на 10%-15%"
+            }
+          ]
+        },
+        {
+          "name": "SPEEDY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Длительность взмаха увеличивается на 10%-15%"
+            }
+          ]
+        },
+        {
+          "name": "BUTCHER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Увеличивает количество поражаемых конечностей за удар на 2–3"
+            }
+          ]
+        },
+        {
+          "name": "WARRIOR",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Урон титана повышается на 7.5%-15%"
+            }
+          ]
+        }
+      ],
+      "defense": [
+        {
+          "name": "UNBREAKABLE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Ты можешь проигнорировать 3-4 травмы за катку"
+            }
+          ]
+        },
+        {
+          "name": "STALWART DURABILITY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Здоровье увеличивается на 50-75 ед."
+            }
+          ]
+        },
+        {
+          "name": "HARDY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Сопротивление урону увеличивается на 10–15%"
+            }
+          ]
+        },
+        {
+          "name": "SAFEGUARD",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс получить травму уменьшается на 12%-16%"
+            }
+          ]
+        }
+      ],
+      "support": [
+        {
+          "name": "GEAR EXPERT",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Управление ODM/Копий улучшается на 10–12.5%"
+            },
+            {
+              "type": "good",
+              "description": "Скорость ODM/Копий увеличивается на 7.5–10%"
+            }
+          ]
+        },
+        {
+          "name": "SIPHONING",
+          "effects": [
+            {
+              "type": "good",
+              "description": "За убийство титана, обьем газа восполняется на 1–2%"
+            }
+          ]
+        },
+        {
+          "name": "ADRENALINE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Дает 8–18% шанс восстановить 5–7.5% недостающего здоровья за каждое убийство"
+            }
+          ]
+        },
+        {
+          "name": "TRAUMA BATTERY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Когда тебя лечат, все союзники восстанавливают 12.5–20% своего здоровья"
+            }
+          ]
+        },
+        {
+          "name": "MUNITIONS EXPERT",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Количество копий увеличивается на 1–2 ед."
+            }
+          ]
+        }
+      ]
+    },
+    "Легендарная": {
+      "main": [
+        {
+          "name": "INDEFATIGABLE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "За катку ты можешь превратиться в титана 2-3 раза подряд"
+            },
+            {
+              "type": "good",
+              "description": "Шкала пробуждения заполняется на 15–25% быстрее"
+            }
+          ]
+        },
+        {
+          "name": "PERFECT SOUL",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Все статы ODM/Копий повышаются на 7.5%–10%"
+            }
+          ]
+        },
+        {
+          "name": "PERFECT FORM",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Урон ODM/Копий увеличивается на 7.5%–10%"
+            },
+            {
+              "type": "good",
+              "description": "Ты наносишь максимальный урон, пока поддерживаешь скорость не ниже 70%–50% от максимальной"
+            }
+          ]
+        },
+        {
+          "name": "WIND RHAPSODY",
+          "effects": [
+            {
+              "type": "bad",
+              "description": "Критический урон уменьшается на 2x-1.67x"
+            },
+            {
+              "type": "good",
+              "description": "Шанс крита повышается на 2x~2.4x"
+            }
+          ]
+        },
+        {
+          "name": "FLAME RHAPSODY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Критический урон увеличивается на 2x-2.3x"
+            },
+            {
+              "type": "good",
+              "description": "Шанс крита повышается на 5%-12.5%"
+            }
+          ]
+        },
+        {
+          "name": "TYRANT'S STARE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита ограничен 0.0–10%"
+            },
+            {
+              "type": "good",
+              "description": "15–25% крит-урона идёт в урон от ODM/Копий"
+            },
+            {
+              "type": "good",
+              "description": "25–40% крит-шанса идёт в урон от ODM/Копий"
+            }
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "name": "UNPARALLELED STRENGTH",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Дамаг Копий/ОДМ увеличивается на 15%-25%"
+            }
+          ]
+        },
+        {
+          "name": "EVISCERATE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Критический урон увеличивается на 30%-50%"
+            }
+          ]
+        },
+        {
+          "name": "SANCTIFIED",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита повышается на 15%-20%"
+            }
+          ]
+        },
+        {
+          "name": "PEERLESS FOCUS",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс крита повышается на 7.5%-10%"
+            },
+            {
+              "type": "good",
+              "description": "Критический урон повышается на 20%-30%"
+            }
+          ]
+        },
+        {
+          "name": "CARNIFEX",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Попадания Клинком/Копьём могут поразить сразу на 3–5/1–2 конечности больше"
+            }
+          ]
+        },
+        {
+          "name": "WARCHIEF",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Урон титана увеличивается на 12%-20%"
+            }
+          ]
+        }
+      ],
+      "defense": [
+        {
+          "name": "INVINCIBLE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Ты можешь проигнорировать 3-5 травм за катку"
+            }
+          ]
+        },
+        {
+          "name": "FONT OF VITALITY",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Здоровье увеличивается на 100-125 ед."
+            }
+          ]
+        },
+        {
+          "name": "ROBUST",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Сопротивление урону увеличивается на 20–27.5%"
+            }
+          ]
+        },
+        {
+          "name": "AEGIS",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс получить травму уменьшается на 25%-40%"
+            }
+          ]
+        },
+        {
+          "name": "PEERLESS CONSTITUTION",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Сопротивление к урону увеличивается на 15%-20%"
+            },
+            {
+              "type": "good",
+              "description": "Шанс получить травму уменьшается на 15%-25%"
+            }
+          ]
+        }
+      ],
+      "support": [
+        {
+          "name": "GEAR MASTER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Управление ODM/Копьями улучшается на 12.5–15%"
+            },
+            {
+              "type": "good",
+              "description": "Скорость ODM/Копий увеличивается на 10–12.5%"
+            }
+          ]
+        },
+        {
+          "name": "EXHUMATION",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Обьем газа пополняется на 2%–3.5% за каждого убитого титана"
+            }
+          ]
+        },
+        {
+          "name": "PEERLESS COMMANDER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Регенерация здоровья тиммейтов увеличивается на 2.5–5% на 15–25 секунд после отдачи приказа"
+            },
+            {
+              "type": "good",
+              "description": "Акустические фаеры заставляют аномальных титанов отпустить игроков с руки"
+            },
+            {
+              "type": "good",
+              "description": "Бафф на регенерацию здоровья не складывается, но его время действия обновляется"
+            }
+          ]
+        },
+        {
+          "name": "COURAGE CATALYST",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Перезарядка скиллов тиммейтов (включая тебя) уменьшается на 1 с за каждое твою убийство"
+            },
+            {
+              "type": "good",
+              "description": "Управление ODM/Копьями у тиммейтов (включая тебя) улучшается на 4–6% на 5–10 с за каждое твоё убийство"
+            }
+          ]
+        },
+        {
+          "name": "SIXTH SENSE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Дальность ODM/Копий увеличивается на 7.5–10%"
+            },
+            {
+              "type": "good",
+              "description": "Ты видишь всех титанов даже через стены и дома"
+            }
+          ]
+        },
+        {
+          "name": "MUNITIONS MASTER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Количество громовых копий увеличивается на 2-4 ед."
+            }
+          ]
+        }
+      ]
+    },
+    "Мифическая": {
+      "main": [
+        {
+          "name": "FOUNDER'S BLESSING",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Превращения в титана за катку увеличиваются на 3-5 ед."
+            },
+            {
+              "type": "good",
+              "description": "Шкала пробуждения заполняется на 25%-35% быстрее"
+            },
+            {
+              "type": "good",
+              "description": "Ты агришь всех титанов и боссов на себя в радиусе 150м"
+            },
+            {
+              "type": "good",
+              "description": "Все статы титана повышаются на 10%-15%"
+            }
+          ]
+        },
+        {
+          "name": "HEAVENLY RESTRICTION",
+          "effects": [
+            {
+              "type": "bad",
+              "description": "Все экипированные скиллы отключаются и не могут быть использованны в катке"
+            },
+            {
+              "type": "good",
+              "description": "Урон от ODM/Копий увеличивается на 5–8% за каждый экипированный скилл"
+            },
+            {
+              "type": "good",
+              "description": "+10–20% шанс добить титана при нанесении ему травмы"
+            },
+            {
+              "type": "good",
+              "description": "Сопротивление к урону увеличивается на 15–25%"
+            }
+          ]
+        },
+        {
+          "name": "MAXIMUM FIREPOWER",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Количество копий увеличивается на 2-4 ед."
+            },
+            {
+              "type": "good",
+              "description": "Скорость полета копий увеличивается на 20%-40%"
+            },
+            {
+              "type": "good",
+              "description": "Все статы громовых копий увеличиваются на 5%-7.5%"
+            },
+            {
+              "type": "good",
+              "description": "При выстреле копья больше не имеют отдачи"
+            }
+          ]
+        }
+      ],
+      "attack": [
+        {
+          "name": "KENGO",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Дамаг Копий/ОДМ увеличивается на 25%-40%"
+            },
+            {
+              "type": "good",
+              "description": "Прочность клинка увеличивается на 10%-20%, а шанс сохранить прочность клинка после удара увеличивается на 5%-10%"
+            },
+            {
+              "type": "good",
+              "description": "Клинки могут поразить 2-4 конечности за удар, а копья 1-2"
+            }
+          ]
+        },
+        {
+          "name": "BLACK FLASH",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Каждые 1.0% скорости дают дополнительные 0.3–0.6% критического урона"
+            },
+            {
+              "type": "good",
+              "description": "ПРИЗРАК: Дешы имеют на 10% большую скорость и позволяют проходить сквозь титанов"
+            },
+            {
+              "type": "good",
+              "description": "Каждый критический удар наносит максимально возможный урон"
+            }
+          ]
+        },
+        {
+          "name": "ART OF WAR",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Скорость удара титанов M1 увеличивается на 7.5%-10%"
+            },
+            {
+              "type": "good",
+              "description": "Урон титана увеличивается на 30%-40%"
+            }
+          ]
+        },
+        {
+          "name": "EVERLASTING FLAME",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Радиус взрыва увеличивается на 15%–30%"
+            },
+            {
+              "type": "good",
+              "description": "Каждый взрыв наносит 10%–30% урона горением попавшим в него титанам"
+            }
+          ]
+        }
+      ],
+      "defense": [
+        {
+          "name": "IMMORTAL",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс получить травму уменьшается на 15%-22.5%"
+            },
+            {
+              "type": "good",
+              "description": "Здоровье увеличивается на 100-125 ед."
+            },
+            {
+              "type": "good",
+              "description": "Сопротивление к урону увеличивается на 22.5%-30%"
+            }
+          ]
+        },
+        {
+          "name": "ADAPTATION",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Регенерация здоровья увеличивается на 3–5 ед."
+            },
+            {
+              "type": "bad",
+              "description": "Получаемый урон увеличивается в 1.5–2 раза"
+            },
+            {
+              "type": "good",
+              "description": "Получение одной и той же атаки 2 раза даёт к ней иммунитет (складывается до 3 раз)"
+            },
+            {
+              "type": "bad",
+              "description": "Действие иммунитета ослаблено наполовину во время Превращения в титана"
+            },
+            {
+              "type": "bad",
+              "description": "Иммунитет сбрасывается при использовании превращения в титана"
+            }
+          ]
+        }
+      ],
+      "support": [
+        {
+          "name": "TATSUJIN",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Управление ODM/Копьями улучшается на 15%–25%"
+            },
+            {
+              "type": "good",
+              "description": "Скорость ODM/Копий увеличивается на 10%–20%"
+            },
+            {
+              "type": "good",
+              "description": "Запас газа ODM/Копий увеличивается на 10%–15%"
+            },
+            {
+              "type": "good",
+              "description": "Дальность ODM/Копий увеличивается на 15%–25%"
+            }
+          ]
+        },
+        {
+          "name": "FONT OF INSPIRATION",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Время перезарядки твоих приказов и фаеров уменьшено вдвое, а эффект от них усилен в 1.25–1.5 раза"
+            },
+            {
+              "type": "good",
+              "description": "Теперь приказы можно использовать в воздухе"
+            },
+            {
+              "type": "good",
+              "description": "Сопротивление к урону союзников, находящихся под действием твоих приказов, повышается на 20–30%"
+            }
+          ]
+        },
+        {
+          "name": "SOULFEED",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Обьем газа пополняется на 1.5–2.5% за каждое убийство титана"
+            },
+            {
+              "type": "good",
+              "description": "ХП увеличивается на 0.75–1.5% за каждое убийство титана"
+            },
+            {
+              "type": "good",
+              "description": "Ты видишь всех титанов даже через стены и дома"
+            }
+          ]
+        },
+        {
+          "name": "EXPLOSIVE FORTUNE",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Шанс сохранения увеличивается на 10–15%"
+            },
+            {
+              "type": "good",
+              "description": "Вероятность восстановить 1 копьё за убийство титана 5–7.5%"
+            }
+          ]
+        },
+        {
+          "name": "UNWAVERING BELIEF",
+          "effects": [
+            {
+              "type": "good",
+              "description": "Перезарядка скиллов у всех членов отряда сокращается на 2 с за каждое убийство титана"
+            },
+            {
+              "type": "bad",
+              "description": "Время перезарядки скиллов увеличено в 1.5 раза"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
